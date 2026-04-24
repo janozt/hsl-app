@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Canal de Denuncias HSL - JANOZ</title>
-  <!-- Iconos de FontAwesome -->
+  <!-- Iconos -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   
   <style>
@@ -14,6 +14,10 @@
       --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       --text-dark: #333;
       --text-light: #666;
+      --danger: #dc3545;
+      --warning: #ffc107;
+      --info: #17a2b8;
+      --success: #28a745;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -58,7 +62,6 @@
     }
     .header h2 { font-size: 18px; font-weight: 600; }
     .btn-back { background: none; border: none; color: white; font-size: 20px; cursor: pointer; padding: 5px; }
-    .btn-back:hover { opacity: 0.8; }
     
     /* Pantalla de Inicio */
     .home-content { 
@@ -154,6 +157,32 @@
     
     .case-meta { font-size: 12px; color: #888; display: flex; gap: 15px; margin-top: 5px; }
     
+    /* Botones de Acción Admin */
+    .action-buttons {
+      padding: 15px;
+      background: #e9ecef;
+      border-top: 1px solid #ddd;
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn-action {
+      padding: 8px 15px;
+      border: none;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
+      color: white;
+      transition: transform 0.2s;
+    }
+    .btn-action:hover { transform: scale(1.05); }
+    .btn-act-pending { background: orange; }
+    .btn-act-review { background: #34b7f1; }
+    .btn-act-resolved { background: var(--success); }
+    .btn-act-delete { background: var(--danger); }
+
     /* Modal */
     .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; }
     .modal-content { background: white; padding: 30px; border-radius: 20px; text-align: center; max-width: 400px; width: 90%; animation: popIn 0.3s; }
@@ -177,6 +206,7 @@
     <div class="home-content">
       <!-- LOGO -->
       <div style="margin-bottom: 15px;">
+        <!-- Asegúrate de tener la imagen logo.png en la carpeta client/img/ -->
         <img src="img/logo.png" alt="JANOZ CONTRATISTAS" style="max-width: 100%; height: auto; max-height: 100px; object-fit: contain;">
       </div>
       
@@ -221,7 +251,7 @@
       </div>
       <div class="form-group">
         <label>Descripción de los hechos:</label>
-        <textarea id="caseDesc" rows="6" placeholder="Describa detalladamente qué sucedió, cuándo, dónde y quiénes estuvieron involucrados..."></textarea>
+        <textarea id="caseDesc" rows="6" placeholder="Describa detalladamente qué sucedió..."></textarea>
       </div>
       <button class="btn-submit" onclick="submitCase()">Enviar Denuncia Anónima</button>
     </div>
@@ -235,6 +265,8 @@
       <div style="width: 20px;"></div>
     </div>
     <div class="chat-area" id="chat-messages"></div>
+    <!-- Aquí se inyectarán los botones de admin dinámicamente -->
+    <div id="admin-actions-container" style="display:none;" class="action-buttons"></div>
     <div class="input-area">
       <input type="text" id="chat-input" placeholder="Escriba su mensaje..." onkeypress="handleEnter(event)">
       <button class="btn-main btn-green" style="width: auto; padding: 10px 15px; margin: 0; border-radius: 50%;" onclick="sendMsg()">➤</button>
@@ -260,7 +292,7 @@
       <button class="btn-back" onclick="showScreen('screen-home')"><i class="fas fa-home"></i></button>
     </div>
     <div class="admin-content" id="admin-dashboard-content">
-      <!-- Contenido dinámico: Estadísticas y Lista -->
+      <!-- Contenido dinámico -->
     </div>
   </div>
 
@@ -271,14 +303,9 @@
   <div class="modal-content">
     <h2 style="color: var(--primary); margin-bottom: 10px;">✅ Denuncia Recibida</h2>
     <p style="color: #666; font-size: 14px;">Su caso ha sido registrado exitosamente.</p>
-    
     <div class="case-id-display" id="new-case-id">HSL-XXXX</div>
-    
-    <p style="font-size: 12px; color: #888; margin-bottom: 20px;">
-      ⚠️ Guarde este código para dar seguimiento a su caso.
-    </p>
-    
-    <button class="btn-main btn-green" onclick="goToChatFromModal()">Ir al Chat de Seguimiento</button>
+    <p style="font-size: 12px; color: #888; margin-bottom: 20px;">Guarde este código para seguimiento.</p>
+    <button class="btn-main btn-green" onclick="goToChatFromModal()">Ir al Chat</button>
     <button class="btn-main btn-grey" style="width: 100%; margin-top: 10px;" onclick="document.getElementById('modal-success').style.display='none'">Cerrar</button>
   </div>
 </div>
@@ -289,7 +316,6 @@
   let currentCaseId = null;
   let isAdmin = false;
 
-  // Navegación
   function showScreen(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
@@ -300,11 +326,7 @@
   async function submitCase() {
     const type = document.getElementById('caseType').value;
     const desc = document.getElementById('caseDesc').value;
-    if(!desc.trim()) return alert('⚠️ Por favor escriba una descripción');
-
-    const btn = document.querySelector('.btn-submit');
-    btn.innerText = 'Enviando...';
-    btn.disabled = true;
+    if(!desc.trim()) return alert('⚠️ Escriba una descripción');
 
     try {
       const res = await fetch('/api/case', {
@@ -318,13 +340,10 @@
         document.getElementById('new-case-id').innerText = data.caseId;
         document.getElementById('modal-success').style.display = 'flex';
         currentCaseId = data.caseId;
-        document.getElementById('caseDesc').value = ''; // Limpiar
+        document.getElementById('caseDesc').value = '';
       }
     } catch(err) {
-      alert('Error al enviar. Intente nuevamente.');
-    } finally {
-      btn.innerText = 'Enviar Denuncia Anónima';
-      btn.disabled = false;
+      alert('Error al enviar');
     }
   }
 
@@ -334,16 +353,17 @@
   }
 
   function promptCaseId() {
-    const id = prompt("Ingrese su código de caso (Ej: HSL-ABC123):");
+    const id = prompt("Código de caso:");
     if(id) openChat(id.trim());
   }
 
   // --- CHAT ---
   async function openChat(id) {
     currentCaseId = id;
-    isAdmin = false; // Modo usuario por defecto
+    isAdmin = false; 
     document.getElementById('chat-title').innerText = "Caso " + id;
-    document.getElementById('chat-messages').innerHTML = '<p style="text-align:center; color:#999; padding:20px;">Cargando historial...</p>';
+    document.getElementById('chat-messages').innerHTML = '<p style="text-align:center; color:#999;">Cargando...</p>';
+    document.getElementById('admin-actions-container').style.display = 'none'; // Ocultar acciones admin
     showScreen('screen-chat');
     
     try {
@@ -355,31 +375,87 @@
       
       if(data.messages && data.messages.length > 0) {
         data.messages.forEach(m => {
-          // Si soy usuario, mis mensajes son 'me', los de admin son 'other'
           const type = m.sender === 'whistleblower' ? 'me' : (m.sender === 'admin' ? 'other' : 'system');
           appendMsg(m.text, type, m.timestamp);
         });
       } else {
-        appendMsg("Bienvenido al chat seguro. Un especialista revisará su caso pronto.", "system");
+        appendMsg("Bienvenido al chat seguro.", "system");
       }
-      
       socket.emit('join_case', id);
     } catch(err) {
-      document.getElementById('chat-messages').innerHTML = '<p style="color:red; text-align:center;">Error al cargar</p>';
+      console.error(err);
     }
+  }
+
+  // --- CHAT ADMIN (CON BOTONES) ---
+  async function openAdminChat(caseId) {
+    currentCaseId = caseId;
+    isAdmin = true;
+    document.getElementById('chat-title').innerHTML = `Caso ${caseId} <span style="font-size:10px; background:rgba(255,255,255,0.3); padding:2px 6px; border-radius:5px;">ADMIN</span>`;
+    document.getElementById('chat-messages').innerHTML = '';
+    showScreen('screen-chat');
+    
+    // Mostrar botones de acción
+    renderAdminActions();
+    
+    try {
+      const res = await fetch(`/api/case/${caseId}`);
+      const data = await res.json();
+      
+      const container = document.getElementById('chat-messages');
+      container.innerHTML = "";
+      
+      if(data.messages && data.messages.length > 0) {
+        data.messages.forEach(m => {
+          const type = m.sender === 'admin' ? 'me' : (m.sender === 'whistleblower' ? 'other' : 'system');
+          appendMsg(m.text, type, m.timestamp);
+        });
+      }
+      socket.emit('join_case', caseId);
+    } catch(err) { console.error(err); }
+  }
+
+  function renderAdminActions() {
+    const container = document.getElementById('admin-actions-container');
+    container.style.display = 'flex';
+    container.innerHTML = `
+      <button class="btn-action btn-act-pending" onclick="updateCaseStatus('pending')">🟡 Pendiente</button>
+      <button class="btn-action btn-act-review" onclick="updateCaseStatus('in_review')">🔵 En Revisión</button>
+      <button class="btn-action btn-act-resolved" onclick="updateCaseStatus('resolved')">✅ Resuelto</button>
+    `;
+  }
+
+  async function updateCaseStatus(newStatus) {
+    if(!currentCaseId) return;
+    if(!confirm(`¿Marcar como ${newStatus}?`)) return;
+    
+    try {
+      const res = await fetch(`/api/case/${currentCaseId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+      
+      const data = await res.json();
+      if(data.success) {
+        alert('Estado actualizado');
+        // Recargar lista si volvemos al admin
+        if(document.getElementById('screen-admin').classList.contains('active')) {
+          loadAdminDashboard();
+        }
+      }
+    } catch(err) { alert('Error actualizando'); }
   }
 
   function appendMsg(text, type, timestamp) {
     const container = document.getElementById('chat-messages');
     const div = document.createElement('div');
     div.className = `msg msg-${type}`;
-    
     let timeStr = "";
     if(timestamp) {
       const time = new Date(timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
       timeStr = `<div class="msg-time">${time}</div>`;
     }
-    
     div.innerHTML = `${text}${timeStr}`;
     container.appendChild(div);
     container.scrollTop = 99999;
@@ -391,16 +467,10 @@
     if(!text || !currentCaseId) return;
     
     const sender = isAdmin ? 'admin' : 'whistleblower';
-    const type = isAdmin ? 'other' : 'me'; // Visualmente
+    const type = isAdmin ? 'other' : 'me'; 
     
     appendMsg(text, type);
-    
-    socket.emit('send_message', { 
-      caseId: currentCaseId, 
-      text: text, 
-      sender: sender 
-    });
-    
+    socket.emit('send_message', { caseId: currentCaseId, text: text, sender: sender });
     input.value = "";
   }
 
@@ -408,9 +478,8 @@
 
   // --- ADMIN ---
   async function loginAdmin() {
-    const pass = document.getElementById('admin-pass').value;
-    // ⚠️ Cambia 'TuContraseñaSegura' por la contraseña que quieras
-    if(pass === 'adminjanozt123') { 
+    // Cambia 'TuContraseña' por tu contraseña real
+    if(document.getElementById('admin-pass').value === 'TuContraseña') { 
       isAdmin = true;
       showScreen('screen-admin');
       document.getElementById('admin-pass').value = '';
@@ -424,11 +493,9 @@
     container.innerHTML = '<p style="text-align:center; padding:20px;">Cargando...</p>';
     
     try {
-      // 1. Cargar Estadísticas
       const statsRes = await fetch('/api/admin/stats');
       const stats = await statsRes.json();
       
-      // 2. Cargar Lista de Casos
       const casesRes = await fetch('/api/admin/cases');
       const cases = await casesRes.json();
       
@@ -443,12 +510,11 @@
             <div class="stat-label">Pendientes</div>
           </div>
         </div>
-        
         <h3 style="margin-bottom:15px; color:#075E54;">📋 Lista de Casos</h3>
       `;
       
       if(cases.length === 0) {
-        html += `<p style="text-align:center; color:#999;">No hay casos registrados aún.</p>`;
+        html += `<p style="text-align:center; color:#999;">No hay casos.</p>`;
       } else {
         cases.forEach(caso => {
           const fecha = new Date(caso.createdAt).toLocaleDateString();
@@ -466,51 +532,20 @@
               <div class="case-meta">
                 <span>📅 ${fecha}</span>
                 <span>💬 ${caso.messageCount} mensajes</span>
-                ${caso.hasFiles ? '<span>📎 Archivos</span>' : ''}
               </div>
             </div>
           `;
         });
       }
-      
       container.innerHTML = html;
     } catch(err) {
-      container.innerHTML = '<p style="color:red; text-align:center;">Error cargando panel</p>';
+      container.innerHTML = '<p style="color:red;">Error cargando panel</p>';
     }
   }
 
-  // Función especial para abrir chat desde admin
-  async function openAdminChat(caseId) {
-    currentCaseId = caseId;
-    isAdmin = true;
-    document.getElementById('chat-title').innerHTML = `Caso ${caseId} <span style="font-size:12px; background:rgba(255,255,255,0.2); padding:2px 8px; border-radius:10px;">ADMIN</span>`;
-    document.getElementById('chat-messages').innerHTML = '';
-    showScreen('screen-chat');
-    
-    try {
-      const res = await fetch(`/api/case/${caseId}`);
-      const data = await res.json();
-      
-      if(data.messages && data.messages.length > 0) {
-        data.messages.forEach(m => {
-          // Si soy admin, mis mensajes son 'me', los del usuario son 'other'
-          const type = m.sender === 'admin' ? 'me' : (m.sender === 'whistleblower' ? 'other' : 'system');
-          appendMsg(m.text, type, m.timestamp);
-        });
-      }
-      socket.emit('join_case', caseId);
-    } catch(err) {
-      console.error(err);
-    }
-  }
-
-  // Escuchar mensajes en tiempo real
   socket.on('receive_message', (msg) => {
-    // Solo mostrar si estamos en el chat de este caso
     if(msg.caseId === currentCaseId) {
-      const type = isAdmin ? 
-        (msg.sender === 'admin' ? 'me' : 'other') : 
-        (msg.sender === 'whistleblower' ? 'me' : 'other');
+      const type = isAdmin ? (msg.sender === 'admin' ? 'me' : 'other') : (msg.sender === 'whistleblower' ? 'me' : 'other');
       appendMsg(msg.text, type, msg.timestamp);
     }
   });
