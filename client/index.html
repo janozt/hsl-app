@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Canal de Denuncias HSL - JANOZ</title>
-  <!-- Iconos -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   
   <style>
@@ -32,7 +31,6 @@
       padding: 20px;
     }
     
-    /* Contenedor Principal */
     .app-container { 
       background: white; 
       width: 100%;
@@ -46,11 +44,9 @@
       max-height: 800px;
     }
     
-    /* Pantallas */
     .screen { display: none; flex: 1; flex-direction: column; overflow: hidden; position: relative; }
     .screen.active { display: flex; }
     
-    /* Header General */
     .header { 
       background: var(--primary); 
       color: white; 
@@ -63,7 +59,6 @@
     .header h2 { font-size: 18px; font-weight: 600; }
     .btn-back { background: none; border: none; color: white; font-size: 20px; cursor: pointer; padding: 5px; }
     
-    /* Pantalla de Inicio */
     .home-content { 
       padding: 30px 20px; 
       text-align: center; 
@@ -103,7 +98,6 @@
     .btn-blue { background: #34b7f1; }
     .btn-grey { background: #ccc; color: #333; }
 
-    /* Formulario */
     .form-content { padding: 20px; overflow-y: auto; }
     .form-group { margin-bottom: 20px; }
     .form-group label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; }
@@ -118,7 +112,6 @@
     .form-group input:focus, .form-group textarea:focus { border-color: var(--secondary); outline: none; }
     .btn-submit { width: 100%; padding: 14px; background: var(--secondary); color: white; border: none; border-radius: 10px; font-size: 16px; cursor: pointer; font-weight: bold; }
     
-    /* Chat */
     .chat-area { flex: 1; padding: 20px; overflow-y: auto; background: #e5ddd5; display: flex; flex-direction: column; gap: 15px; }
     .msg { padding: 10px 15px; border-radius: 15px; max-width: 80%; font-size: 14px; line-height: 1.4; position: relative; word-wrap: break-word; }
     .msg-me { background: #dcf8c6; align-self: flex-end; border-bottom-right-radius: 4px; }
@@ -129,7 +122,6 @@
     .input-area { padding: 15px; background: #f0f0f0; display: flex; gap: 10px; align-items: center; }
     .input-area input { flex: 1; padding: 12px; border-radius: 25px; border: 1px solid #ddd; outline: none; }
     
-    /* Admin Dashboard */
     .admin-content { padding: 20px; overflow-y: auto; background: #f8f9fa; height: 100%; }
     
     .stats-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 25px; }
@@ -157,7 +149,6 @@
     
     .case-meta { font-size: 12px; color: #888; display: flex; gap: 15px; margin-top: 5px; }
     
-    /* Botones de Acción Admin */
     .action-buttons {
       padding: 15px;
       background: #e9ecef;
@@ -181,9 +172,7 @@
     .btn-act-pending { background: orange; }
     .btn-act-review { background: #34b7f1; }
     .btn-act-resolved { background: var(--success); }
-    .btn-act-delete { background: var(--danger); }
 
-    /* Modal */
     .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; }
     .modal-content { background: white; padding: 30px; border-radius: 20px; text-align: center; max-width: 400px; width: 90%; animation: popIn 0.3s; }
     .case-id-display { background: #e8f5e9; color: var(--primary); padding: 15px; font-family: monospace; font-size: 22px; margin: 20px 0; border-radius: 10px; font-weight: bold; border: 2px dashed var(--secondary); }
@@ -193,7 +182,6 @@
     .admin-link { margin-top: 30px; font-size: 12px; color: #ccc; text-decoration: none; display: block; }
     .admin-link:hover { color: #999; text-decoration: underline; }
 
-    /* Login Screen */
     .login-container { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; padding: 30px; }
   </style>
 </head>
@@ -201,12 +189,9 @@
 
 <div class="app-container">
   
-  <!-- PANTALLA 1: INICIO -->
   <div id="screen-home" class="screen active">
     <div class="home-content">
-      <!-- LOGO -->
       <div style="margin-bottom: 15px;">
-        <!-- Asegúrate de tener la imagen logo.png en la carpeta client/img/ -->
         <img src="img/logo.png" alt="JANOZ CONTRATISTAS" style="max-width: 100%; height: auto; max-height: 100px; object-fit: contain;">
       </div>
       
@@ -232,7 +217,6 @@
     </div>
   </div>
 
-  <!-- PANTALLA 2: FORMULARIO -->
   <div id="screen-form" class="screen">
     <div class="header">
       <button class="btn-back" onclick="showScreen('screen-home')"><i class="fas fa-arrow-left"></i></button>
@@ -257,7 +241,6 @@
     </div>
   </div>
 
-  <!-- PANTALLA 3: CHAT -->
   <div id="screen-chat" class="screen">
     <div class="header">
       <button class="btn-back" onclick="showScreen('screen-home')"><i class="fas fa-arrow-left"></i></button>
@@ -265,40 +248,34 @@
       <div style="width: 20px;"></div>
     </div>
     <div class="chat-area" id="chat-messages"></div>
-    <!-- Aquí se inyectarán los botones de admin dinámicamente -->
     <div id="admin-actions-container" style="display:none;" class="action-buttons"></div>
     <div class="input-area">
-      <input type="text" id="chat-input" placeholder="Escriba su mensaje..." onkeypress="handleEnter(event)">
+      <input type="text" id="chat-input" placeholder="Escriba su mensaje..." onkeypress="handleEnter(event)" autocomplete="off">
       <button class="btn-main btn-green" style="width: auto; padding: 10px 15px; margin: 0; border-radius: 50%;" onclick="sendMsg()">➤</button>
     </div>
   </div>
 
-  <!-- PANTALLA 4: LOGIN ADMIN -->
   <div id="screen-login" class="screen">
     <div class="login-container">
       <h2 style="margin-bottom: 20px; color: var(--primary);">Acceso RR.HH.</h2>
       <div class="form-group" style="width: 100%;">
-        <input type="password" id="admin-pass" placeholder="Contraseña" style="text-align: center;">
+        <input type="password" id="admin-pass" placeholder="Contraseña" style="text-align: center;" autocomplete="off">
       </div>
       <button class="btn-main btn-blue" style="width: 100%;" onclick="loginAdmin()">Ingresar</button>
       <button class="btn-main btn-grey" style="width: 100%; margin-top: 10px;" onclick="showScreen('screen-home')">Cancelar</button>
     </div>
   </div>
 
-  <!-- PANTALLA 5: ADMIN DASHBOARD -->
   <div id="screen-admin" class="screen">
     <div class="header">
       <h2>Panel de Casos</h2>
       <button class="btn-back" onclick="showScreen('screen-home')"><i class="fas fa-home"></i></button>
     </div>
-    <div class="admin-content" id="admin-dashboard-content">
-      <!-- Contenido dinámico -->
-    </div>
+    <div class="admin-content" id="admin-dashboard-content"></div>
   </div>
 
 </div>
 
-<!-- MODAL: ÉXITO -->
 <div id="modal-success" class="modal">
   <div class="modal-content">
     <h2 style="color: var(--primary); margin-bottom: 10px;">✅ Denuncia Recibida</h2>
@@ -322,7 +299,6 @@
     if(id === 'screen-admin') loadAdminDashboard();
   }
 
-  // --- DENUNCIANTE ---
   async function submitCase() {
     const type = document.getElementById('caseType').value;
     const desc = document.getElementById('caseDesc').value;
@@ -357,15 +333,14 @@
     if(id) openChat(id.trim());
   }
 
-  // --- CHAT ---
   async function openChat(id) {
     currentCaseId = id;
-    isAdmin = false; 
-  document.getElementById('chat-input').value = ''; // ← AGREGA ESTA LÍNEA
-  document.getElementById('chat-title').innerText = "Caso " + id;
-  document.getElementById('chat-messages').innerHTML = '<p style="text-align:center; color:#999;">Cargando...</p>';
-  document.getElementById('admin-actions-container').style.display = 'none';
-  showScreen('screen-chat');
+    isAdmin = false;
+    document.getElementById('chat-input').value = '';
+    document.getElementById('chat-title').innerText = "Caso " + id;
+    document.getElementById('chat-messages').innerHTML = '<p style="text-align:center; color:#999;">Cargando...</p>';
+    document.getElementById('admin-actions-container').style.display = 'none';
+    showScreen('screen-chat');
     
     try {
       const res = await fetch(`/api/case/${id}`);
@@ -388,14 +363,14 @@
     }
   }
 
-  // --- CHAT ADMIN (CON BOTONES) ---
   async function openAdminChat(caseId) {
     currentCaseId = caseId;
     isAdmin = true;
-    document.getElementById('chat-input').value = ''; // ← AGREGA ESTA LÍNEA
-      document.getElementById('chat-title').innerHTML = `Caso ${caseId}...`;
+    document.getElementById('chat-input').value = '';
+    document.getElementById('chat-title').innerHTML = `Caso ${caseId} <span style="font-size:10px; background:rgba(255,255,255,0.3); padding:2px 6px; border-radius:5px;">ADMIN</span>`;
+    document.getElementById('chat-messages').innerHTML = '';
+    showScreen('screen-chat');
     
-    // Mostrar botones de acción
     renderAdminActions();
     
     try {
@@ -439,7 +414,6 @@
       const data = await res.json();
       if(data.success) {
         alert('Estado actualizado');
-        // Recargar lista si volvemos al admin
         if(document.getElementById('screen-admin').classList.contains('active')) {
           loadAdminDashboard();
         }
@@ -476,9 +450,7 @@
 
   function handleEnter(e) { if(e.key === 'Enter') sendMsg(); }
 
-  // --- ADMIN ---
   async function loginAdmin() {
-    // Cambia 'TuContraseña' por tu contraseña real
     if(document.getElementById('admin-pass').value === 'adminjanozt123') { 
       isAdmin = true;
       showScreen('screen-admin');
