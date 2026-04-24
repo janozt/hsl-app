@@ -13,10 +13,6 @@
       --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       --text-dark: #333;
       --text-light: #666;
-      --danger: #dc3545;
-      --warning: #ffc107;
-      --info: #17a2b8;
-      --success: #28a745;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -122,13 +118,33 @@
     .input-area { padding: 15px; background: #f0f0f0; display: flex; gap: 10px; align-items: center; }
     .input-area input { flex: 1; padding: 12px; border-radius: 25px; border: 1px solid #ddd; outline: none; }
     
+    /* ESTILOS ADMIN */
     .admin-content { padding: 20px; overflow-y: auto; background: #f8f9fa; height: 100%; }
-    
-    .stats-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 25px; }
+    .stats-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px; }
     .stat-card { background: white; padding: 15px; border-radius: 12px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
     .stat-value { font-size: 28px; font-weight: bold; color: var(--primary); }
     .stat-label { font-size: 12px; color: #888; text-transform: uppercase; margin-top: 5px; }
     
+    /* Filtros y Buscador */
+    .admin-controls { 
+      display: flex; 
+      flex-direction: column; 
+      gap: 10px; 
+      margin-bottom: 20px; 
+      background: white; 
+      padding: 15px; 
+      border-radius: 12px; 
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    .search-box { width: 100%; padding: 10px; border: 2px solid #eee; border-radius: 8px; font-size: 14px; }
+    .filter-btns { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 5px; }
+    .filter-btn { 
+      padding: 6px 12px; border: 1px solid #ddd; background: white; border-radius: 15px; 
+      font-size: 12px; cursor: pointer; white-space: nowrap; transition: 0.2s;
+    }
+    .filter-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+    .filter-btn:hover:not(.active) { background: #f0f0f0; }
+
     .case-card { 
       background: white; 
       border: 1px solid #eee; 
@@ -149,39 +165,17 @@
     
     .case-meta { font-size: 12px; color: #888; display: flex; gap: 15px; margin-top: 5px; }
     
-    .action-buttons {
-      padding: 15px;
-      background: #e9ecef;
-      border-top: 1px solid #ddd;
-      display: flex;
-      gap: 10px;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-    .btn-action {
-      padding: 8px 15px;
-      border: none;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: bold;
-      cursor: pointer;
-      color: white;
-      transition: transform 0.2s;
-    }
-    .btn-action:hover { transform: scale(1.05); }
+    .action-buttons { padding: 15px; background: #e9ecef; border-top: 1px solid #ddd; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+    .btn-action { padding: 8px 15px; border: none; border-radius: 20px; font-size: 12px; font-weight: bold; cursor: pointer; color: white; }
     .btn-act-pending { background: orange; }
     .btn-act-review { background: #34b7f1; }
-    .btn-act-resolved { background: var(--success); }
+    .btn-act-resolved { background: var(--secondary); }
 
     .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; }
     .modal-content { background: white; padding: 30px; border-radius: 20px; text-align: center; max-width: 400px; width: 90%; animation: popIn 0.3s; }
     .case-id-display { background: #e8f5e9; color: var(--primary); padding: 15px; font-family: monospace; font-size: 22px; margin: 20px 0; border-radius: 10px; font-weight: bold; border: 2px dashed var(--secondary); }
-    
     @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-    
     .admin-link { margin-top: 30px; font-size: 12px; color: #ccc; text-decoration: none; display: block; }
-    .admin-link:hover { color: #999; text-decoration: underline; }
-
     .login-container { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; padding: 30px; }
   </style>
 </head>
@@ -194,59 +188,33 @@
       <div style="margin-bottom: 15px;">
         <img src="img/logo.png" alt="JANOZ CONTRATISTAS" style="max-width: 100%; height: auto; max-height: 100px; object-fit: contain;">
       </div>
-      
       <h1 class="home-title">Canal de Denuncias HSL</h1>
       <p class="company-name">JANOZ CONTRATISTAS GENERALES S.A.C</p>
       <p class="subtitle">Sistema Confidencial • Anónimo • Seguro</p>
-      
       <div class="features">
         <div class="feature"><i class="fas fa-lock"></i> Encriptado</div>
         <div class="feature"><i class="fas fa-user-secret"></i> Anónimo</div>
         <div class="feature"><i class="fas fa-comments"></i> Chat en Vivo</div>
       </div>
-      
-      <button class="btn-main btn-green" onclick="showScreen('screen-form')">
-        <i class="fas fa-file-alt"></i> Presentar Denuncia
-      </button>
-      
-      <button class="btn-main btn-blue" onclick="promptCaseId()">
-        <i class="fas fa-search"></i> Seguir mi Caso
-      </button>
-      
+      <button class="btn-main btn-green" onclick="showScreen('screen-form')"><i class="fas fa-file-alt"></i> Presentar Denuncia</button>
+      <button class="btn-main btn-blue" onclick="promptCaseId()"><i class="fas fa-search"></i> Seguir mi Caso</button>
       <a href="#" onclick="showScreen('screen-login')" class="admin-link">Acceso RR.HH.</a>
     </div>
   </div>
 
   <div id="screen-form" class="screen">
-    <div class="header">
-      <button class="btn-back" onclick="showScreen('screen-home')"><i class="fas fa-arrow-left"></i></button>
-      <h2>Nueva Denuncia</h2>
-      <div style="width: 20px;"></div>
-    </div>
+    <div class="header"><button class="btn-back" onclick="showScreen('screen-home')"><i class="fas fa-arrow-left"></i></button><h2>Nueva Denuncia</h2><div style="width: 20px;"></div></div>
     <div class="form-content">
-      <div class="form-group">
-        <label>Tipo de Caso:</label>
-        <select id="caseType">
-          <option value="Hostigamiento Sexual">Hostigamiento Sexual</option>
-          <option value="Hostigamiento Laboral">Hostigamiento Laboral</option>
-          <option value="Discriminación">Discriminación</option>
-          <option value="Otro">Otro</option>
-        </select>
+      <div class="form-group"><label>Tipo de Caso:</label>
+        <select id="caseType"><option value="Hostigamiento Sexual">Hostigamiento Sexual</option><option value="Hostigamiento Laboral">Hostigamiento Laboral</option><option value="Discriminación">Discriminación</option><option value="Otro">Otro</option></select>
       </div>
-      <div class="form-group">
-        <label>Descripción de los hechos:</label>
-        <textarea id="caseDesc" rows="6" placeholder="Describa detalladamente qué sucedió..."></textarea>
-      </div>
+      <div class="form-group"><label>Descripción de los hechos:</label><textarea id="caseDesc" rows="6" placeholder="Describa detalladamente..."></textarea></div>
       <button class="btn-submit" onclick="submitCase()">Enviar Denuncia Anónima</button>
     </div>
   </div>
 
   <div id="screen-chat" class="screen">
-    <div class="header">
-      <button class="btn-back" onclick="showScreen('screen-home')"><i class="fas fa-arrow-left"></i></button>
-      <h2 id="chat-title">Caso #---</h2>
-      <div style="width: 20px;"></div>
-    </div>
+    <div class="header"><button class="btn-back" onclick="showScreen('screen-home')"><i class="fas fa-arrow-left"></i></button><h2 id="chat-title">Caso #---</h2><div style="width: 20px;"></div></div>
     <div class="chat-area" id="chat-messages"></div>
     <div id="admin-actions-container" style="display:none;" class="action-buttons"></div>
     <div class="input-area">
@@ -258,20 +226,17 @@
   <div id="screen-login" class="screen">
     <div class="login-container">
       <h2 style="margin-bottom: 20px; color: var(--primary);">Acceso RR.HH.</h2>
-      <div class="form-group" style="width: 100%;">
-        <input type="password" id="admin-pass" placeholder="Contraseña" style="text-align: center;" autocomplete="off">
-      </div>
+      <div class="form-group" style="width: 100%;"><input type="password" id="admin-pass" placeholder="Contraseña" style="text-align: center;" autocomplete="off"></div>
       <button class="btn-main btn-blue" style="width: 100%;" onclick="loginAdmin()">Ingresar</button>
       <button class="btn-main btn-grey" style="width: 100%; margin-top: 10px;" onclick="showScreen('screen-home')">Cancelar</button>
     </div>
   </div>
 
   <div id="screen-admin" class="screen">
-    <div class="header">
-      <h2>Panel de Casos</h2>
-      <button class="btn-back" onclick="showScreen('screen-home')"><i class="fas fa-home"></i></button>
+    <div class="header"><h2>Panel de Casos</h2><button class="btn-back" onclick="showScreen('screen-home')"><i class="fas fa-home"></i></button></div>
+    <div class="admin-content" id="admin-dashboard-content">
+      <!-- Se llena dinámicamente -->
     </div>
-    <div class="admin-content" id="admin-dashboard-content"></div>
   </div>
 
 </div>
@@ -279,9 +244,9 @@
 <div id="modal-success" class="modal">
   <div class="modal-content">
     <h2 style="color: var(--primary); margin-bottom: 10px;">✅ Denuncia Recibida</h2>
-    <p style="color: #666; font-size: 14px;">Su caso ha sido registrado exitosamente.</p>
+    <p style="color: #666; font-size: 14px;">Su caso ha sido registrado.</p>
     <div class="case-id-display" id="new-case-id">HSL-XXXX</div>
-    <p style="font-size: 12px; color: #888; margin-bottom: 20px;">Guarde este código para seguimiento.</p>
+    <p style="font-size: 12px; color: #888; margin-bottom: 20px;">Guarde este código.</p>
     <button class="btn-main btn-green" onclick="goToChatFromModal()">Ir al Chat</button>
     <button class="btn-main btn-grey" style="width: 100%; margin-top: 10px;" onclick="document.getElementById('modal-success').style.display='none'">Cerrar</button>
   </div>
@@ -292,6 +257,8 @@
   const socket = io();
   let currentCaseId = null;
   let isAdmin = false;
+  let allCasesData = []; // Para guardar los casos y filtrar sin recargar
+  let currentFilter = 'all'; // Filtro actual
 
   function showScreen(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -299,6 +266,7 @@
     if(id === 'screen-admin') loadAdminDashboard();
   }
 
+  // --- DENUNCIANTE ---
   async function submitCase() {
     const type = document.getElementById('caseType').value;
     const desc = document.getElementById('caseDesc').value;
@@ -311,16 +279,13 @@
         body: JSON.stringify({ category: type, description: desc })
       });
       const data = await res.json();
-      
       if(data.success) {
         document.getElementById('new-case-id').innerText = data.caseId;
         document.getElementById('modal-success').style.display = 'flex';
         currentCaseId = data.caseId;
         document.getElementById('caseDesc').value = '';
       }
-    } catch(err) {
-      alert('Error al enviar');
-    }
+    } catch(err) { alert('Error al enviar'); }
   }
 
   function goToChatFromModal() {
@@ -333,6 +298,7 @@
     if(id) openChat(id.trim());
   }
 
+  // --- CHAT USUARIO ---
   async function openChat(id) {
     currentCaseId = id;
     isAdmin = false;
@@ -345,10 +311,8 @@
     try {
       const res = await fetch(`/api/case/${id}`);
       const data = await res.json();
-      
       const container = document.getElementById('chat-messages');
       container.innerHTML = "";
-      
       if(data.messages && data.messages.length > 0) {
         data.messages.forEach(m => {
           const type = m.sender === 'whistleblower' ? 'me' : (m.sender === 'admin' ? 'other' : 'system');
@@ -358,11 +322,10 @@
         appendMsg("Bienvenido al chat seguro.", "system");
       }
       socket.emit('join_case', id);
-    } catch(err) {
-      console.error(err);
-    }
+    } catch(err) { console.error(err); }
   }
 
+  // --- CHAT ADMIN ---
   async function openAdminChat(caseId) {
     currentCaseId = caseId;
     isAdmin = true;
@@ -376,10 +339,8 @@
     try {
       const res = await fetch(`/api/case/${caseId}`);
       const data = await res.json();
-      
       const container = document.getElementById('chat-messages');
       container.innerHTML = "";
-      
       if(data.messages && data.messages.length > 0) {
         data.messages.forEach(m => {
           const type = m.sender === 'admin' ? 'me' : (m.sender === 'whistleblower' ? 'other' : 'system');
@@ -403,22 +364,18 @@
   async function updateCaseStatus(newStatus) {
     if(!currentCaseId) return;
     if(!confirm(`¿Marcar como ${newStatus}?`)) return;
-    
     try {
       const res = await fetch(`/api/case/${currentCaseId}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus })
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus })
       });
-      
       const data = await res.json();
       if(data.success) {
         alert('Estado actualizado');
         if(document.getElementById('screen-admin').classList.contains('active')) {
-          loadAdminDashboard();
+          loadAdminDashboard(); // Recargar dashboard
         }
       }
-    } catch(err) { alert('Error actualizando'); }
+    } catch(err) { alert('Error'); }
   }
 
   function appendMsg(text, type, timestamp) {
@@ -439,80 +396,115 @@
     const input = document.getElementById('chat-input');
     const text = input.value.trim();
     if(!text || !currentCaseId) return;
-    
     const sender = isAdmin ? 'admin' : 'whistleblower';
     const type = isAdmin ? 'other' : 'me'; 
-    
     appendMsg(text, type);
     socket.emit('send_message', { caseId: currentCaseId, text: text, sender: sender });
     input.value = "";
   }
-
   function handleEnter(e) { if(e.key === 'Enter') sendMsg(); }
 
+  // --- ADMIN DASHBOARD ---
   async function loginAdmin() {
     if(document.getElementById('admin-pass').value === 'adminjanozt123') { 
       isAdmin = true;
       showScreen('screen-admin');
       document.getElementById('admin-pass').value = '';
-    } else {
-      alert('❌ Contraseña incorrecta');
-    }
+    } else { alert('❌ Contraseña incorrecta'); }
   }
 
   async function loadAdminDashboard() {
     const container = document.getElementById('admin-dashboard-content');
-    container.innerHTML = '<p style="text-align:center; padding:20px;">Cargando...</p>';
+    container.innerHTML = '<p style="text-align:center; padding:20px;">Cargando datos...</p>';
     
     try {
+      // Cargar Stats
       const statsRes = await fetch('/api/admin/stats');
       const stats = await statsRes.json();
       
+      // Cargar TODOS los casos y guardarlos en variable global
       const casesRes = await fetch('/api/admin/cases');
-      const cases = await casesRes.json();
+      allCasesData = await casesRes.json();
       
+      // Renderizar estructura base
       let html = `
         <div class="stats-container">
-          <div class="stat-card">
-            <div class="stat-value">${stats.total}</div>
-            <div class="stat-label">Total Casos</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value" style="color:orange;">${stats.pending}</div>
-            <div class="stat-label">Pendientes</div>
+          <div class="stat-card"><div class="stat-value">${stats.total}</div><div class="stat-label">Total Casos</div></div>
+          <div class="stat-card"><div class="stat-value" style="color:orange;">${stats.pending}</div><div class="stat-label">Pendientes</div></div>
+        </div>
+        
+        <div class="admin-controls">
+          <input type="text" class="search-box" id="searchInput" placeholder="🔍 Buscar por ID de caso..." oninput="renderCasesList()">
+          <div class="filter-btns">
+            <button class="filter-btn active" onclick="setFilter('all', this)">Todos</button>
+            <button class="filter-btn" onclick="setFilter('pending', this)">Pendientes</button>
+            <button class="filter-btn" onclick="setFilter('in_review', this)">En Revisión</button>
+            <button class="filter-btn" onclick="setFilter('resolved', this)">Resueltos</button>
           </div>
         </div>
-        <h3 style="margin-bottom:15px; color:#075E54;">📋 Lista de Casos</h3>
+        
+        <div id="cases-list-container">
+          <!-- Lista de casos renderizada aquí -->
+        </div>
       `;
-      
-      if(cases.length === 0) {
-        html += `<p style="text-align:center; color:#999;">No hay casos.</p>`;
-      } else {
-        cases.forEach(caso => {
-          const fecha = new Date(caso.createdAt).toLocaleDateString();
-          const statusClass = caso.status === 'pending' ? 'pending' : (caso.status === 'resolved' ? 'resolved' : 'in_review');
-          const statusText = caso.status === 'pending' ? 'Pendiente' : (caso.status === 'resolved' ? 'Resuelto' : 'En Revisión');
-          
-          html += `
-            <div class="case-card" onclick="openAdminChat('${caso.id}')">
-              <div class="case-header">
-                <span class="case-id">${caso.id}</span>
-                <span class="badge ${statusClass}">${statusText}</span>
-              </div>
-              <div style="font-size:13px; color:#333; margin-bottom:5px;"><strong>${caso.category}</strong></div>
-              <div style="font-size:12px; color:#666; margin-bottom:10px;">${caso.description}</div>
-              <div class="case-meta">
-                <span>📅 ${fecha}</span>
-                <span>💬 ${caso.messageCount} mensajes</span>
-              </div>
-            </div>
-          `;
-        });
-      }
       container.innerHTML = html;
+      
+      // Renderizar lista inicial
+      renderCasesList();
+      
     } catch(err) {
       container.innerHTML = '<p style="color:red;">Error cargando panel</p>';
     }
+  }
+
+  function setFilter(status, btnElement) {
+    currentFilter = status;
+    // Actualizar botones visuales
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btnElement.classList.add('active');
+    renderCasesList();
+  }
+
+  function renderCasesList() {
+    const container = document.getElementById('cases-list-container');
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    
+    // Filtrar casos
+    let filteredCases = allCasesData.filter(c => {
+      // Filtro por estado
+      const statusMatch = currentFilter === 'all' || c.status === currentFilter;
+      // Filtro por búsqueda
+      const searchMatch = c.id.toLowerCase().includes(searchTerm);
+      return statusMatch && searchMatch;
+    });
+
+    if(filteredCases.length === 0) {
+      container.innerHTML = `<p style="text-align:center; color:#999; padding:20px;">No se encontraron casos.</p>`;
+      return;
+    }
+
+    let listHtml = '';
+    filteredCases.forEach(caso => {
+      const fecha = new Date(caso.createdAt).toLocaleDateString();
+      const statusClass = caso.status === 'pending' ? 'pending' : (caso.status === 'resolved' ? 'resolved' : 'in_review');
+      const statusText = caso.status === 'pending' ? 'Pendiente' : (caso.status === 'resolved' ? 'Resuelto' : 'En Revisión');
+      
+      listHtml += `
+        <div class="case-card" onclick="openAdminChat('${caso.id}')">
+          <div class="case-header">
+            <span class="case-id">${caso.id}</span>
+            <span class="badge ${statusClass}">${statusText}</span>
+          </div>
+          <div style="font-size:13px; color:#333; margin-bottom:5px;"><strong>${caso.category}</strong></div>
+          <div style="font-size:12px; color:#666; margin-bottom:10px;">${caso.description}</div>
+          <div class="case-meta">
+            <span>📅 ${fecha}</span>
+            <span>💬 ${caso.messageCount} mensajes</span>
+          </div>
+        </div>
+      `;
+    });
+    container.innerHTML = listHtml;
   }
 
   socket.on('receive_message', (msg) => {
