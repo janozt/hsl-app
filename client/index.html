@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Canal de Denuncias HSL - JANOZ</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #075E54; 
+      --secondary: #25D366; 
+      --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+    body { background: var(--bg-gradient); min-height: 100vh; display: flex; justify-content: center; align-items: center; color: #333; }
+    
+    .app-container { 
+      background: white; 
+      width: 95%; 
+      max-width: 900px; 
+      border-radius: 20px; 
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2); 
+      overflow: hidden; 
+      display: flex; 
+      flex-direction: column; 
+      height: 90vh; 
+    }
+    
+    .screen { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+    .screen.active { display: flex; }
+    
+    .header { background: var(--primary); color: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; }
+    .header h2 { font-size: 18px; }
+    .btn-back { background: none; border: none; color: white; font-size: 20px; cursor: pointer; }
+    
+    .home-content { 
+      padding: 20px 40px; 
+      text-align: center; 
+      flex: 1; 
+      display: flex; 
+      flex-direction: column; 
+      justify-content: center; 
+      align-items: center; 
+      overflow-y: auto;
+    }
+    
+    .home-title { 
+      color: var(--primary); 
+      margin: 15px 0 10px 0;
+      font-size: 24px;
+    }
+    
+    .company-name {
+      color: #075E54; 
+      font-weight: 700; 
+      margin-bottom: 5px;
+      font-size: 16px;
+    }
+    
+    .features { display: flex; gap: 15px; margin: 25px 0; flex-wrap: wrap; justify-content: center; }
+    .feature { background: #f8f9fa; padding: 10px 15px; border-radius: 10px; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+    
+    .btn-main { padding: 15px 30px; border: none; border-radius: 50px; font-size: 16px; font-weight: bold; cursor: pointer; margin: 10px; color: white; transition: transform 0.2s; }
+    .btn-main:hover { transform: scale(1.05); }
+    .btn-green { background: var(--secondary); }
+    .btn-blue { background: #34b7f1; }
+    
+    .status-box { background: #d4edda; color: #155724; padding: 15px; border-radius: 10px; margin-top: 20px; width: 100%; max-width: 400px; text-align: left; font-size: 14px; }
+    
+    .form-content { padding: 20px; overflow-y: auto; }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; margin-bottom: 5px; font-weight: 600; }
+    .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; }
+    .btn-submit { width: 100%; padding: 12px; background: var(--secondary); color: white; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
+    
+    .chat-area { flex: 1; padding: 15px; overflow-y: auto; background: #e5ddd5; display: flex; flex-direction: column; gap: 10px; }
+    .msg { padding: 10px 15px; border-radius: 15px; max-width: 80%; font-size: 14px; line-height: 1.4; }
+    .msg-me { background: #dcf8c6; align-self: flex-end; border-bottom-right-radius: 4px; }
+    .msg-other { background: white; align-self: flex-start; border-bottom-left-radius: 4px; }
+    .input-area { padding: 10px; background: #f0f0f0; display: flex; gap: 10px; }
+    .input-area input { flex: 1; padding: 10px; border-radius: 20px; border: 1px solid #ddd; outline: none; }
+    
+    .admin-content { padding: 20px; overflow-y: auto; }
+    .case-card { background: white; border: 1px solid #eee; padding: 15px; border-radius: 10px; margin-bottom: 10px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+    .case-card:hover { background: #f9f9f9; }
+    .badge { padding: 4px 8px; border-radius: 12px; font-size: 11px; color: white; }
+    .badge.pending { background: orange; }
+    .badge.resolved { background: green; }
+    
+    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 100; }
+    .modal-content { background: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 400px; }
+    .case-id-display { background: #eee; padding: 10px; font-family: monospace; font-size: 20px; margin: 15px 0; border-radius: 5px; }
+    
+    .admin-link { margin-top: 20px; font-size: 12px; color: #999; text-decoration: none; }
+    .admin-link:hover { color: #666; }
+  </style>
+</head>
+<body>
+
+<div class="app-container">
+  
+  <!-- PANTALLA 1: INICIO CON LOGO -->
+  <div id="screen-home" class="screen active">
+    <div class="home-content">
+      <!-- LOGO JANOZ -->
+      <div style="margin-bottom: 10px;">
+        <img src="img/logo.png" alt="JANOZ CONTRATISTAS" style="max-width: 100%; height: auto; max-height: 120px; object-fit: contain;">
+      </div>
+      
+      <h1 class="home-title">🛡️ Canal de Denuncias HSL</h1>
+      <p class="company-name">JANOZ CONTRATISTAS GENERALES S.A.C</p>
+      <p style="color: #666; font-size: 14px;">Sistema Confidencial • Anónimo • Seguro</p>
+      
+      <div class="features">
+        <div class="feature"><i class="fas fa-lock"></i> Encriptado</div>
+        <div class="feature"><i class="fas fa-user-secret"></i> Anónimo</div>
+        <div class="feature"><i class="fas fa-comments"></i> Chat en Vivo</div>
+      </div>
+      
+      <button class="btn-main btn-green" onclick="showScreen('screen-form')">📝 Presentar Denuncia</button>
+      <button class="btn-main btn-blue" onclick="promptCaseId()">🔍 Seguir mi Caso</button>
+      
+      <div class="status-box">
+        <strong>✅ Servidor Activo</strong><br>
+        🌐 http://localhost:4000<br>
+        📱 Socket.io conectado
+      </div>
+      
+      <a href="#" onclick="showScreen('screen-login')" class="admin-link">Acceso RR.HH.</a>
+    </div>
+  </div>
+
+  <!-- PANTALLA 2: FORMULARIO -->
+  <div id="screen-form" class="screen">
+    <div class="header">
+      <button class="btn-back" onclick="showScreen('screen-home')"><i class="fas fa-arrow-left"></i></button>
+      <h2>Nueva Denuncia</h2>
+      <div style="width: 20px;"></div>
+    </div>
+    <div class="form-content">
+      <div class="form-group">
+        <label>Tipo de Caso:</label>
+        <select id="caseType">
+          <option value="Hostigamiento Sexual">Hostigamiento Sexual</option>
+          <option value="Hostigamiento Laboral">Hostigamiento Laboral</option>
+          <option value="Discriminación">Discriminación</option>
+          <option value="Otro">Otro</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Descripción de los hechos:</label>
+        <textarea id="caseDesc" rows="5" placeholder="Describa detalladamente qué sucedió, cuándo, dónde y quiénes estuvieron involucrados..."></textarea>
+      </div>
+      <button class="btn-submit" onclick="submitCase()">Enviar Denuncia Anónima</button>
+    </div>
+  </div>
+
+  <!-- PANTALLA 3: CHAT -->
+  <div id="screen-chat" class="screen">
+    <div class="header">
+      <button class="btn-back" onclick="showScreen('screen-home')"><i class="fas fa-arrow-left"></i></button>
+      <h2 id="chat-title">Caso #---</h2>
+      <div style="width: 20px;"></div>
+    </div>
+    <div class="chat-area" id="chat-messages"></div>
+    <div class="input-area">
+      <input type="text" id="chat-input" placeholder="Escriba su mensaje..." onkeypress="handleEnter(event)">
+      <button class="btn-main btn-green" style="padding: 10px 15px; margin: 0;" onclick="sendMsg()">➤</button>
+    </div>
+  </div>
+
+  <!-- PANTALLA 4: ADMIN LOGIN -->
+  <div id="screen-login" class="screen" style="justify-content: center; align-items: center;">
+    <h2>Acceso RR.HH.</h2>
+    <div class="form-group" style="width: 80%; margin-top: 20px;">
+      <input type="password" id="admin-pass" placeholder="Contraseña (admin123)">
+    </div>
+    <button class="btn-main btn-blue" onclick="loginAdmin()">Ingresar</button>
+    <button class="btn-main" style="background: #ccc; color: #333; margin-top: 10px;" onclick="showScreen('screen-home')">Cancelar</button>
+  </div>
+
+  <!-- PANTALLA 5: ADMIN DASHBOARD -->
+  <div id="screen-admin" class="screen">
+    <div class="header">
+      <h2>Panel de Casos</h2>
+      <button class="btn-back" onclick="showScreen('screen-home')"><i class="fas fa-home"></i></button>
+    </div>
+    <div class="admin-content" id="cases-list">
+      <p style="text-align: center; color: #666; padding: 20px;">Cargando casos...</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL: ÉXITO -->
+<div id="modal-success" class="modal">
+  <div class="modal-content">
+    <h2 style="color: var(--primary); margin-bottom: 15px;">✅ Denuncia Recibida</h2>
+    <p>Su denuncia ha sido registrada exitosamente.</p>
+    <p style="margin-top: 10px;">Guarde su código de seguimiento:</p>
+    <div class="case-id-display" id="new-case-id">HSL-XXXX</div>
+    <button class="btn-main btn-green" onclick="goToChatFromModal()">Ir al Chat de Seguimiento</button>
+    <button class="btn-main" style="background: #ccc; color: #333; margin-top: 10px;" onclick="document.getElementById('modal-success').style.display='none'">Cerrar</button>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  const socket = io();
+  let currentCaseId = null;
+
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    if(id === 'screen-admin') loadCases();
+  }
+
+  // --- DENUNCIANTE ---
+  async function submitCase() {
+    const type = document.getElementById('caseType').value;
+    const desc = document.getElementById('caseDesc').value;
+    if(!desc) return alert('⚠️ Por favor escriba una descripción de los hechos');
+
+    const res = await fetch('/api/case', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ category: type, description: desc })
+    });
+    const data = await res.json();
+    
+    if(data.success) {
+      document.getElementById('new-case-id').innerText = data.caseId;
+      document.getElementById('modal-success').style.display = 'flex';
+      currentCaseId = data.caseId;
+      document.getElementById('caseDesc').value = '';
+    }
+  }
+
+  function goToChatFromModal() {
+    document.getElementById('modal-success').style.display = 'none';
+    openChat(currentCaseId);
+  }
+
+  function promptCaseId() {
+    const id = prompt("Ingrese su código de caso:\n(Ej: HSL-ABC123)");
+    if(id) openChat(id.trim());
+  }
+
+  // --- CHAT ---
+  async function openChat(id) {
+    currentCaseId = id;
+    document.getElementById('chat-title').innerText = "Caso " + id;
+    document.getElementById('chat-messages').innerHTML = "";
+    showScreen('screen-chat');
+    
+    try {
+      const res = await fetch(`/api/case/${id}`);
+      const data = await res.json();
+      if(data.messages && data.messages.length > 0) {
+        data.messages.forEach(m => appendMsg(m.text, m.sender === 'whistleblower' ? 'me' : 'other'));
+      } else {
+        appendMsg("Bienvenido al chat de seguimiento. Un especialista le atenderá pronto.", "other");
+      }
+    } catch(err) {
+      appendMsg("Conectando al chat...", "other");
+    }
+    
+    socket.emit('join_case', id);
+  }
+
+  function appendMsg(text, type) {
+    const div = document.createElement('div');
+    div.className = `msg msg-${type}`;
+    div.innerText = text;
+    document.getElementById('chat-messages').appendChild(div);
+    document.getElementById('chat-messages').scrollTop = 99999;
+  }
+
+  function sendMsg() {
+    const input = document.getElementById('chat-input');
+    const text = input.value.trim();
+    if(!text || !currentCaseId) return;
+    
+    appendMsg(text, 'me');
+    socket.emit('send_message', { caseId: currentCaseId, text: text, sender: 'whistleblower' });
+    input.value = "";
+    
+    // Simular respuesta automática
+    setTimeout(() => {
+      appendMsg("Mensaje recibido. Un especialista de RR.HH. le responderá pronto.", "other");
+    }, 1000);
+  }
+
+  function handleEnter(e) { if(e.key === 'Enter') sendMsg(); }
+
+  // --- ADMIN ---
+  async function loginAdmin() {
+    const pass = document.getElementById('admin-pass').value;
+    if(pass === 'admin123') {
+      showScreen('screen-admin');
+      document.getElementById('admin-pass').value = '';
+    } else {
+      alert('❌ Contraseña incorrecta');
+    }
+  }
+
+  async function loadCases() {
+    try {
+      const res = await fetch('/api/admin/stats');
+      const stats = await res.json();
+      document.getElementById('cases-list').innerHTML = `
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+          <h3 style="margin-bottom: 10px;">📊 Estadísticas</h3>
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+            <div style="background: white; padding: 10px; border-radius: 8px; text-align: center;">
+              <div style="font-size: 24px; font-weight: bold; color: var(--primary);">${stats.total || 0}</div>
+              <div style="font-size: 12px; color: #666;">Total de Casos</div>
+            </div>
+            <div style="background: white; padding: 10px; border-radius: 8px; text-align: center;">
+              <div style="font-size: 24px; font-weight: bold; color: orange;">${stats.pending || 0}</div>
+              <div style="font-size: 12px; color: #666;">Pendientes</div>
+            </div>
+          </div>
+        </div>
+        <p style="text-align: center; color: #666; padding: 20px;">
+          Para ver los casos, use el código de seguimiento<br>
+          o espere a que se implemente la lista completa.
+        </p>
+      `;
+    } catch(err) {
+      document.getElementById('cases-list').innerHTML = '<p style="text-align: center; color: red;">Error cargando estadísticas</p>';
+    }
+  }
+
+  // Escuchar mensajes en tiempo real
+  socket.on('receive_message', (msg) => {
+    if(msg.caseId === currentCaseId) {
+      appendMsg(msg.text, 'other');
+    }
+  });
+
+  socket.on('connect', () => {
+    console.log('✅ Conectado al servidor');
+  });
+</script>
+</body>
+</html>
