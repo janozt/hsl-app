@@ -301,43 +301,75 @@
   }
 
   async function loadCases() {
-    try {
-      const res = await fetch('/api/admin/stats');
-      const stats = await res.json();
-      document.getElementById('cases-list').innerHTML = `
-        <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
-          <h3 style="margin-bottom: 10px;">📊 Estadísticas</h3>
-          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
-            <div style="background: white; padding: 10px; border-radius: 8px; text-align: center;">
-              <div style="font-size: 24px; font-weight: bold; color: var(--primary);">${stats.total || 0}</div>
-              <div style="font-size: 12px; color: #666;">Total de Casos</div>
-            </div>
-            <div style="background: white; padding: 10px; border-radius: 8px; text-align: center;">
-              <div style="font-size: 24px; font-weight: bold; color: orange;">${stats.pending || 0}</div>
-              <div style="font-size: 12px; color: #666;">Pendientes</div>
-            </div>
+  try {
+    // Cargar estadísticas
+    const statsRes = await fetch('/api/admin/stats');
+    const stats = await statsRes.json();
+    
+    // Cargar lista de casos
+    const casesRes = await fetch('/api/admin/cases');
+    const cases = await casesRes.json();
+    
+    let casesHtml = `
+      <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+        <h3 style="margin-bottom: 10px;">📊 Estadísticas</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
+          <div style="background: white; padding: 10px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 24px; font-weight: bold; color: #075E54;">${stats.total || 0}</div>
+            <div style="font-size: 12px; color: #666;">Total</div>
+          </div>
+          <div style="background: white; padding: 10px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 24px; font-weight: bold; color: orange;">${stats.pending || 0}</div>
+            <div style="font-size: 12px; color: #666;">Pendientes</div>
           </div>
         </div>
-        <p style="text-align: center; color: #666; padding: 20px;">
-          Para ver los casos, use el código de seguimiento<br>
-          o espere a que se implemente la lista completa.
-        </p>
-      `;
-    } catch(err) {
-      document.getElementById('cases-list').innerHTML = '<p style="text-align: center; color: red;">Error cargando estadísticas</p>';
+      </div>
+      
+      <h3 style="margin-bottom: 15px; color: #075E54;">📋 Lista de Casos</h3>
+    `;
+    
+    if (cases.length === 0) {
+      casesHtml += `<p style="text-align: center; color: #999; padding: 30px;">No hay casos registrados</p>`;
+    } else {
+      cases.forEach(caso => {
+        const fecha = new Date(caso.createdAt).toLocaleDateString('es-PE');
+        const statusClass = caso.status === 'pending' ? 'pending' : 'resolved';
+        const statusText = caso.status === 'pending' ? 'Pendiente' : 'Resuelto';
+        
+        casesHtml += `
+          <div class="case-card" onclick="openAdminChat('${caso.id}')">
+            <div style="flex: 1;">
+              <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                <strong style="color: #075E54; font-family: monospace;">${caso.id}</strong>
+                <span class="badge ${statusClass}">${statusText}</span>
+                ${caso.hasFiles ? '<span style="font-size: 12px;">📎</span>' : ''}
+              </div>
+              <div style="font-size: 13px; color: #666; margin-bottom: 5px;">
+                <strong>Tipo:</strong> ${caso.category}
+              </div>
+              <div style="font-size: 13px; color: #666;">
+                ${caso.description}
+              </div>
+              <div style="font-size: 12px; color: #999; margin-top: 8px;">
+                📅 ${fecha} • 💬 ${caso.messageCount} mensajes
+              </div>
+            </div>
+            <button class="btn-main btn-blue" style="padding: 8px 15px; margin: 0; font-size: 14px;">
+              Ver →
+            </button>
+          </div>
+        `;
+      });
     }
+    
+    document.getElementById('cases-list').innerHTML = casesHtml;
+  } catch(err) {
+    console.error('Error:', err);
+    document.getElementById('cases-list').innerHTML = `
+      <p style="text-align: center; color: red; padding: 20px;">
+        Error cargando casos. Recarga la página.<br>
+        <small>${err.message}</small>
+      </p>
+    `;
   }
-
-  // Escuchar mensajes en tiempo real
-  socket.on('receive_message', (msg) => {
-    if(msg.caseId === currentCaseId) {
-      appendMsg(msg.text, 'other');
-    }
-  });
-
-  socket.on('connect', () => {
-    console.log('✅ Conectado al servidor');
-  });
-</script>
-</body>
-</html>
+}
