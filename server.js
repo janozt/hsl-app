@@ -1,635 +1,100 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Canal de Denuncias HSL - JANOZ</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+const express = require('express');
+const http = require('http');
+const socketIo = require('socket.io');
+const cors = require('cors');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+const app = express();
+const server = http.createServer(app);
+const io = socketIo(server, { cors: { origin: "*", methods: ["GET", "POST", "PATCH"] } });
+
+app.use(cors());
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'client')));
+
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadDir),
+  filename: (req, file, cb) => cb(null, Date.now() + '-' + Math.random().toString(36).substr(2, 9) + path.extname(file.originalname))
+});
+const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
+
+let cases = [];
+let adminNotes = {};
+
+function generateId() {
+  return 'HSL-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substr(2, 4).toUpperCase();
+}
+
+// Crear caso
+app.post('/api/case', (req, res) => {
+  const { category, description } = req.body;
+  const newCase = {
+    id: generateId(),
+    category,
+    description,
+    status: 'pending',
+    createdAt: new Date().toISOString(),
+    files: []
+  };
+  cases.unshift(newCase);
+  adminNotes[newCase.id] = [];
+  io.emit('new_case', newCase);
+  res.json({ success: true, caseId: newCase.id });
+});
+
+// Subir archivos
+app.post('/api/upload/:caseId', upload.array('files', 5), (req, res) => {
+  const { caseId } = req.params;
+  const caseFound = cases.find(c => c.id === caseId);
+  if (!caseFound) return res.status(404).json({ error: 'Caso no encontrado' });
   
-  <style>
-    :root {
-      --primary: #075E54; 
-      --secondary: #25D366; 
-      --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      --text-dark: #333;
-      --text-light: #666;
-    }
+  const files = req.files.map(f => ({
+    filename: f.filename, originalname: f.originalname, size: f.size, mimetype: f.mimetype, uploadedAt: new Date().toISOString()
+  }));
+  caseFound.files.push(...files);
+  res.json({ success: true, files });
+});
 
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    
-    body { 
-      background: var(--bg-gradient); 
-      min-height: 100vh; 
-      display: flex; 
-      justify-content: center; 
-      align-items: center; 
-      color: var(--text-dark); 
-      padding: 20px;
-    }
-    
-    .app-container { 
-      background: white; 
-      width: 100%;
-      max-width: 900px; 
-      border-radius: 20px; 
-      box-shadow: 0 15px 40px rgba(0,0,0,0.3); 
-      overflow: hidden; 
-      display: flex; 
-      flex-direction: column; 
-      height: 90vh; 
-      max-height: 800px;
-    }
-    
-    .screen { display: none; flex: 1; flex-direction: column; overflow: hidden; position: relative; }
-    .screen.active { display: flex; }
-    
-    .header { 
-      background: var(--primary); 
-      color: white; 
-      padding: 15px 20px; 
-      display: flex; 
-      align-items: center; 
-      justify-content: space-between; 
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-    .header h2 { font-size: 18px; font-weight: 600; }
-    .btn-back { background: none; border: none; color: white; font-size: 20px; cursor: pointer; padding: 5px; }
-    
-    .home-content { 
-      padding: 30px 20px; 
-      text-align: center; 
-      flex: 1; 
-      display: flex; 
-      flex-direction: column; 
-      justify-content: center; 
-      align-items: center; 
-      overflow-y: auto;
-    }
-    
-    .home-title { color: var(--primary); margin: 15px 0 5px 0; font-size: 24px; }
-    .company-name { color: #075E54; font-weight: 700; margin-bottom: 15px; font-size: 14px; letter-spacing: 1px; }
-    .subtitle { color: var(--text-light); font-size: 14px; margin-bottom: 20px; }
-    
-    .features { display: flex; gap: 10px; margin-bottom: 30px; flex-wrap: wrap; justify-content: center; }
-    .feature { background: #f0f4f8; padding: 8px 15px; border-radius: 20px; font-size: 13px; color: var(--text-light); display: flex; align-items: center; gap: 6px; }
-    
-    .btn-main { 
-      padding: 15px 30px; 
-      border: none; 
-      border-radius: 50px; 
-      font-size: 16px; 
-      font-weight: bold; 
-      cursor: pointer; 
-      margin: 10px; 
-      color: white; 
-      transition: all 0.3s; 
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      width: 250px;
-      justify-content: center;
-    }
-    .btn-main:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
-    .btn-green { background: var(--secondary); }
-    .btn-blue { background: #34b7f1; }
-    .btn-grey { background: #ccc; color: #333; }
-    .btn-sm { padding: 8px 15px; font-size: 14px; width: auto; }
+// Stats Admin
+app.get('/api/admin/stats', (req, res) => {
+  res.json({
+    total: cases.length,
+    pending: cases.filter(c => c.status === 'pending').length,
+    inReview: cases.filter(c => c.status === 'in_review').length,
+    resolved: cases.filter(c => c.status === 'resolved').length
+  });
+});
 
-    .form-content { padding: 20px; overflow-y: auto; }
-    .form-group { margin-bottom: 20px; }
-    .form-group label { display: block; margin-bottom: 8px; font-weight: 600; font-size: 14px; }
-    .form-group input, .form-group textarea, .form-group select { 
-      width: 100%; 
-      padding: 12px; 
-      border: 1px solid #ddd; 
-      border-radius: 10px; 
-      font-size: 15px; 
-      transition: border 0.3s;
-    }
-    .form-group input:focus, .form-group textarea:focus { border-color: var(--secondary); outline: none; }
-    .btn-submit { width: 100%; padding: 14px; background: var(--secondary); color: white; border: none; border-radius: 10px; font-size: 16px; cursor: pointer; font-weight: bold; }
-    
-    .chat-area { flex: 1; padding: 20px; overflow-y: auto; background: #e5ddd5; display: flex; flex-direction: column; gap: 15px; }
-    .msg { padding: 10px 15px; border-radius: 15px; max-width: 80%; font-size: 14px; line-height: 1.4; position: relative; word-wrap: break-word; margin-bottom: 5px; }
-    .msg-me { background: #dcf8c6; align-self: flex-end; border-bottom-right-radius: 4px; }
-    .msg-other { background: white; align-self: flex-start; border-bottom-left-radius: 4px; }
-    .msg-system { background: #fff3cd; align-self: center; color: #856404; font-size: 12px; text-align: center; }
-    .msg-time { font-size: 10px; color: #999; text-align: right; margin-top: 4px; }
-    .msg-file { background: #e3f2fd; padding: 10px; border-radius: 8px; margin-top: 5px; font-size: 12px; }
-    .msg-file img, .msg-file video { max-width: 100%; max-height: 200px; border-radius: 8px; margin-top: 5px; display: block; }
-    .msg-file a { color: #1976d2; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; }
-    
-    .input-area { padding: 15px; background: #f0f0f0; display: flex; gap: 10px; align-items: center; }
-    .input-area input { flex: 1; padding: 12px; border-radius: 25px; border: 1px solid #ddd; outline: none; }
-    
-    /* ADMIN STYLES */
-    .admin-content { padding: 20px; overflow-y: auto; background: #f8f9fa; height: 100%; }
-    .stats-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }
-    .stat-card { background: white; padding: 15px; border-radius: 12px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-    .stat-value { font-size: 28px; font-weight: bold; color: var(--primary); }
-    .stat-label { font-size: 11px; color: #888; text-transform: uppercase; margin-top: 5px; }
-    
-    .admin-controls { 
-      display: flex; 
-      flex-direction: column; 
-      gap: 10px; 
-      margin-bottom: 20px; 
-      background: white; 
-      padding: 15px; 
-      border-radius: 12px; 
-      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    }
-    .search-box { width: 100%; padding: 10px; border: 2px solid #eee; border-radius: 8px; font-size: 14px; }
-    .filter-btns { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 5px; }
-    .filter-btn { 
-      padding: 6px 12px; border: 1px solid #ddd; background: white; border-radius: 15px; 
-      font-size: 12px; cursor: pointer; white-space: nowrap; transition: 0.2s;
-    }
-    .filter-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
-    .filter-btn:hover:not(.active) { background: #f0f0f0; }
+// Lista Admin
+app.get('/api/admin/cases', (req, res) => {
+  res.json(cases.map(c => ({
+    id: c.id, category: c.category, description: c.description.substring(0, 100) + '...',
+    status: c.status, createdAt: c.createdAt, hasFiles: c.files.length > 0
+  })));
+});
 
-    .case-card { 
-      background: white; 
-      border: 1px solid #eee; 
-      padding: 15px; 
-      border-radius: 12px; 
-      margin-bottom: 15px; 
-      cursor: pointer; 
-      transition: all 0.2s; 
-      border-left: 5px solid var(--secondary);
-    }
-    .case-card:hover { transform: translateX(5px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-    .case-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-    .case-id { font-weight: bold; color: var(--primary); font-family: monospace; }
-    .badge { padding: 4px 10px; border-radius: 12px; font-size: 10px; font-weight: bold; color: white; text-transform: uppercase; }
-    .badge.pending { background: orange; }
-    .badge.in_review { background: #34b7f1; }
-    .badge.resolved { background: green; }
-    
-    .case-meta { font-size: 12px; color: #888; display: flex; gap: 15px; margin-top: 5px; }
-    
-    /* CASE DETAILS VIEW */
-    .case-details { 
-      padding: 20px; 
-      overflow-y: auto; 
-      background: white;
-    }
-    .detail-section { 
-      background: #f8f9fa; 
-      padding: 15px; 
-      border-radius: 10px; 
-      margin-bottom: 15px; 
-    }
-    .detail-title { 
-      font-size: 16px; 
-      font-weight: bold; 
-      color: var(--primary); 
-      margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .detail-content { font-size: 14px; color: #333; line-height: 1.6; white-space: pre-wrap; }
-    .evidence-list { display: grid; gap: 10px; }
-    .evidence-item { 
-      background: white; 
-      padding: 12px; 
-      border-radius: 8px; 
-      border: 1px solid #ddd;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-    .evidence-item:hover { background: #f0f4f8; border-color: var(--primary); }
-    .evidence-item i { font-size: 28px; color: var(--primary); }
-    .evidence-info { flex: 1; }
-    .evidence-name { font-weight: 600; font-size: 13px; color: #333; }
-    .evidence-size { font-size: 11px; color: #888; }
-    .evidence-item img { max-width: 100px; max-height: 80px; border-radius: 5px; object-fit: cover; }
-    
-    .action-buttons { padding: 15px; background: #e9ecef; border-top: 1px solid #ddd; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
-    .btn-action { padding: 8px 15px; border: none; border-radius: 20px; font-size: 12px; font-weight: bold; cursor: pointer; color: white; }
-    .btn-act-pending { background: orange; }
-    .btn-act-review { background: #34b7f1; }
-    .btn-act-resolved { background: var(--secondary); }
-    .btn-attach { background: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 20px; cursor: pointer; font-size: 16px; }
-    .btn-attach:hover { background: #5a6268; }
+// Detalle Caso
+app.get('/api/case/:caseId', (req, res) => {
+  const caseFound = cases.find(c => c.id === req.params.caseId);
+  if (!caseFound) return res.status(404).json({ error: 'No encontrado' });
+  res.json({ case: caseFound, notes: adminNotes[caseFound.id] || [] });
+});
 
-    .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000; }
-    .modal-content { background: white; padding: 30px; border-radius: 20px; text-align: center; max-width: 400px; width: 90%; animation: popIn 0.3s; }
-    .case-id-display { background: #e8f5e9; color: var(--primary); padding: 15px; font-family: monospace; font-size: 22px; margin: 20px 0; border-radius: 10px; font-weight: bold; border: 2px dashed var(--secondary); }
-    @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-    .admin-link { margin-top: 30px; font-size: 12px; color: #ccc; text-decoration: none; display: block; }
-    .login-container { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; padding: 30px; }
-    
-    .file-preview { margin-top: 10px; padding: 10px; background: #f8f9fa; border-radius: 8px; font-size: 12px; }
-  </style>
-</head>
-<body>
+// Cambiar Estado
+app.patch('/api/case/:caseId/status', (req, res) => {
+  const { caseId } = req.params;
+  const { status } = req.body;
+  const caseFound = cases.find(c => c.id === caseId);
+  if (!caseFound) return res.status(404).json({ error: 'No encontrado' });
+  caseFound.status = status;
+  io.emit('case_status_changed', { caseId, status });
+  res.json({ success: true });
+});
 
-<div class="app-container">
-  
-  <div id="screen-home" class="screen active">
-    <div class="home-content">
-      <div style="margin-bottom: 15px;">
-        <img src="img/logo.png" alt="JANOZ CONTRATISTAS" style="max-width: 100%; height: auto; max-height: 100px; object-fit: contain;">
-      </div>
-      <h1 class="home-title">Canal de Denuncias HSL</h1>
-      <p class="company-name">JANOZ CONTRATISTAS GENERALES S.A.C</p>
-      <p class="subtitle">Sistema Confidencial • Anónimo • Seguro</p>
-      <div class="features">
-        <div class="feature"><i class="fas fa-lock"></i> Encriptado</div>
-        <div class="feature"><i class="fas fa-user-secret"></i> Anónimo</div>
-        <div class="feature"><i class="fas fa-comments"></i> Chat en Vivo</div>
-      </div>
-      <button class="btn-main btn-green" onclick="showScreen('screen-form')"><i class="fas fa-file-alt"></i> Presentar Denuncia</button>
-      <button class="btn-main btn-blue" onclick="promptCaseId()"><i class="fas fa-search"></i> Seguir mi Caso</button>
-      <a href="#" onclick="showScreen('screen-login')" class="admin-link">Acceso RR.HH.</a>
-    </div>
-  </div>
-
-  <div id="screen-form" class="screen">
-    <div class="header"><button class="btn-back" onclick="showScreen('screen-home')"><i class="fas fa-arrow-left"></i></button><h2>Nueva Denuncia</h2><div style="width: 20px;"></div></div>
-    <div class="form-content">
-      <div class="form-group"><label>Tipo de Caso:</label>
-        <select id="caseType"><option value="Hostigamiento Sexual">Hostigamiento Sexual</option><option value="Hostigamiento Laboral">Hostigamiento Laboral</option><option value="Discriminación">Discriminación</option><option value="Otro">Otro</option></select>
-      </div>
-      <div class="form-group"><label>Descripción de los hechos:</label><textarea id="caseDesc" rows="6" placeholder="Describa detalladamente..."></textarea></div>
-      <div class="form-group"><label>Adjuntar evidencias (opcional):</label><input type="file" id="caseFiles" multiple accept="image/*,video/*,.pdf,.doc,.docx"></div>
-      <button class="btn-submit" onclick="submitCase()">Enviar Denuncia Anónima</button>
-    </div>
-  </div>
-
-  <!-- VISTA: DETALLES DEL CASO -->
-  <div id="screen-case-details" class="screen">
-    <div class="header">
-      <button class="btn-back" onclick="showScreen('screen-admin')"><i class="fas fa-arrow-left"></i></button>
-      <h2 id="details-case-id">Caso #---</h2>
-      <div style="width: 20px;"></div>
-    </div>
-    <div class="case-details" id="case-details-content">
-      <!-- Contenido dinámico -->
-    </div>
-    <div style="padding: 15px; background: #f0f0f0; display: flex; gap: 10px;">
-      <button class="btn-main btn-blue btn-sm" onclick="goToChatFromDetails()" style="flex: 1;">
-        <i class="fas fa-comments"></i> Ir al Chat
-      </button>
-    </div>
-  </div>
-
-  <div id="screen-chat" class="screen">
-    <div class="header">
-      <button class="btn-back" onclick="backFromChat()"><i class="fas fa-arrow-left"></i></button>
-      <h2 id="chat-title">Caso #---</h2>
-      <div style="width: 20px;"></div>
-    </div>
-    <div class="chat-area" id="chat-messages"></div>
-    <div id="admin-actions-container" style="display:none;" class="action-buttons"></div>
-    <div class="input-area">
-      <input type="file" id="fileAttachment" style="display: none;" multiple accept="image/*,video/*,.pdf,.doc,.docx" onchange="handleFileAttach(event)">
-      <button class="btn-attach" onclick="document.getElementById('fileAttachment').click()" title="Adjuntar archivo"><i class="fas fa-paperclip"></i></button>
-      <input type="text" id="chat-input" placeholder="Escriba su mensaje..." onkeypress="handleEnter(event)" autocomplete="off">
-      <button class="btn-main btn-green" style="width: auto; padding: 10px 15px; margin: 0; border-radius: 50%;" onclick="sendMsg()">➤</button>
-    </div>
-  </div>
-
-  <div id="screen-login" class="screen">
-    <div class="login-container">
-      <h2 style="margin-bottom: 20px; color: var(--primary);">Acceso RR.HH.</h2>
-      <div class="form-group" style="width: 100%;"><input type="password" id="admin-pass" placeholder="Contraseña" style="text-align: center;" autocomplete="off"></div>
-      <button class="btn-main btn-blue" style="width: 100%;" onclick="loginAdmin()">Ingresar</button>
-      <button class="btn-main btn-grey" style="width: 100%; margin-top: 10px;" onclick="showScreen('screen-home')">Cancelar</button>
-    </div>
-  </div>
-
-  <div id="screen-admin" class="screen">
-    <div class="header"><h2>Panel de Casos</h2><button class="btn-back" onclick="showScreen('screen-home')"><i class="fas fa-home"></i></button></div>
-    <div class="admin-content" id="admin-dashboard-content"></div>
-  </div>
-
-</div>
-
-<div id="modal-success" class="modal">
-  <div class="modal-content">
-    <h2 style="color: var(--primary); margin-bottom: 10px;">✅ Denuncia Recibida</h2>
-    <p style="color: #666; font-size: 14px;">Su caso ha sido registrado.</p>
-    <div class="case-id-display" id="new-case-id">HSL-XXXX</div>
-    <p style="font-size: 12px; color: #888; margin-bottom: 20px;">Guarde este código.</p>
-    <button class="btn-main btn-green" onclick="goToChatFromModal()">Ir al Chat</button>
-    <button class="btn-main btn-grey" style="width: 100%; margin-top: 10px;" onclick="document.getElementById('modal-success').style.display='none'">Cerrar</button>
-  </div>
-</div>
-
-<script src="/socket.io/socket.io.js"></script>
-<script>
-  const socket = io();
-  let currentCaseId = null;
-  let isAdmin = false;
-  let allCasesData = [];
-  let currentFilter = 'all';
-  let currentCaseData = null;
-
-  function showScreen(id) {
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-    if(id === 'screen-admin') loadAdminDashboard();
-  }
-
-  function backFromChat() {
-    if(isAdmin) {
-      showScreen('screen-admin');
-    } else {
-      showScreen('screen-home');
-    }
-  }
-
-  // --- DENUNCIANTE ---
-  async function submitCase() {
-    const type = document.getElementById('caseType').value;
-    const desc = document.getElementById('caseDesc').value;
-    if(!desc.trim()) return alert('⚠️ Escriba una descripción');
-
-    try {
-      const res = await fetch('/api/case', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ category: type, description: desc })
-      });
-      const data = await res.json();
-      if(data.success) {
-        const fileInput = document.getElementById('caseFiles');
-        if(fileInput.files.length > 0) {
-          const formData = new FormData();
-          for(let file of fileInput.files) {
-            formData.append('files', file);
-          }
-          await fetch(`/api/upload/${data.caseId}`, { method: 'POST', body: formData });
-        }
-        
-        document.getElementById('new-case-id').innerText = data.caseId;
-        document.getElementById('modal-success').style.display = 'flex';
-        currentCaseId = data.caseId;
-        document.getElementById('caseDesc').value = '';
-        fileInput.value = '';
-      }
-    } catch(err) { 
-      console.error(err);
-      alert('Error al enviar'); 
-    }
-  }
-
-  function goToChatFromModal() {
-    document.getElementById('modal-success').style.display = 'none';
-    openChat(currentCaseId);
-  }
-
-  function promptCaseId() {
-    const id = prompt("Código de caso:");
-    if(id) openChat(id.trim());
-  }
-
-  // --- CHAT USUARIO ---
-  async function openChat(id) {
-    currentCaseId = id;
-    isAdmin = false;
-    document.getElementById('chat-input').value = '';
-    document.getElementById('chat-title').innerText = "Caso " + id;
-    document.getElementById('chat-messages').innerHTML = '<p style="text-align:center; color:#999;">Cargando...</p>';
-    document.getElementById('admin-actions-container').style.display = 'none';
-    showScreen('screen-chat');
-    
-    try {
-      const res = await fetch(`/api/case/${id}`);
-      const data = await res.json();
-      console.log('Datos del caso cargados:', data); // DEBUG
-      const container = document.getElementById('chat-messages');
-      container.innerHTML = "";
-      if(data.messages && data.messages.length > 0) {
-        data.messages.forEach(m => {
-          const type = m.sender === 'whistleblower' ? 'me' : (m.sender === 'admin' ? 'other' : 'system');
-          appendMsg(m.text, type, m.timestamp, m.file);
-        });
-      } else {
-        appendMsg("Bienvenido al chat seguro.", "system");
-      }
-      socket.emit('join_case', id);
-    } catch(err) { 
-      console.error('Error cargando chat:', err); 
-    }
-  }
-
-  // --- VER DETALLES DEL CASO (ADMIN) ---
-  async function viewCaseDetails(caseId) {
-    currentCaseId = caseId;
-    document.getElementById('details-case-id').innerText = "Caso " + caseId;
-    const container = document.getElementById('case-details-content');
-    container.innerHTML = '<p style="text-align:center; padding:20px;">Cargando...</p>';
-    showScreen('screen-case-details');
-    
-    try {
-      const res = await fetch(`/api/case/${caseId}`);
-      currentCaseData = await res.json();
-      console.log('Detalles del caso:', currentCaseData); // DEBUG
-      
-      const caso = currentCaseData.case;
-      const messages = currentCaseData.messages || [];
-      
-      let html = `
-        <div class="detail-section">
-          <div class="detail-title"><i class="fas fa-folder-open"></i> Información General</div>
-          <div class="detail-content">
-            <strong>Tipo:</strong> ${caso.category}<br>
-            <strong>Estado:</strong> <span class="badge ${caso.status}">${caso.status}</span><br>
-            <strong>Fecha:</strong> ${new Date(caso.createdAt).toLocaleString()}<br>
-            <strong>Mensajes:</strong> ${messages.length}
-          </div>
-        </div>
-        
-        <div class="detail-section">
-          <div class="detail-title"><i class="fas fa-align-left"></i> Descripción de los Hechos</div>
-          <div class="detail-content">${caso.description || 'Sin descripción'}</div>
-        </div>
-        
-        <div class="detail-section">
-          <div class="detail-title"><i class="fas fa-paperclip"></i> Evidencias Adjuntas</div>
-          <div class="evidence-list" id="evidence-container">
-            ${renderEvidenceList(caso.files)}
-          </div>
-        </div>
-      `;
-      
-      container.innerHTML = html;
-    } catch(err) {
-      console.error('Error cargando detalles:', err);
-      container.innerHTML = '<p style="color:red; text-align:center;">Error cargando detalles</p>';
-    }
-  }
-
-  function renderEvidenceList(files) {
-    console.log('Archivos recibidos:', files); // DEBUG
-    if(!files || files.length === 0) {
-      return '<p style="color:#999; font-size:13px; padding:10px;">No hay evidencias adjuntas</p>';
-    }
-    
-    return files.map(f => {
-      const isImage = f.mimetype && f.mimetype.startsWith('image/');
-      const isVideo = f.mimetype && f.mimetype.startsWith('video/');
-      const icon = isImage ? 'fa-image' : (isVideo ? 'fa-video' : 'fa-file');
-      const size = f.size ? (f.size/1024).toFixed(2) + ' KB' : '';
-      const date = f.uploadedAt ? new Date(f.uploadedAt).toLocaleDateString() : '';
-      
-      return `
-        <div class="evidence-item" onclick="window.open('/uploads/${f.filename}', '_blank')">
-          ${isImage ? `<img src="/uploads/${f.filename}" alt="${f.originalname}">` : `<i class="fas ${icon}"></i>`}
-          <div class="evidence-info">
-            <div class="evidence-name">${f.originalname}</div>
-            <div class="evidence-size">${size} ${date ? '• ' + date : ''}</div>
-          </div>
-          <i class="fas fa-external-link-alt" style="color:#999; font-size:12px;"></i>
-        </div>
-      `;
-    }).join('');
-  }
-
-  function goToChatFromDetails() {
-    if(currentCaseId) {
-      openAdminChat(currentCaseId);
-    }
-  }
-
-  // --- CHAT ADMIN ---
-  async function openAdminChat(caseId) {
-    currentCaseId = caseId;
-    isAdmin = true;
-    document.getElementById('chat-input').value = '';
-    document.getElementById('chat-title').innerHTML = `Caso ${caseId} <span style="font-size:10px; background:rgba(255,255,255,0.3); padding:2px 6px; border-radius:5px;">ADMIN</span>`;
-    document.getElementById('chat-messages').innerHTML = '';
-    showScreen('screen-chat');
-    
-    renderAdminActions();
-    
-    try {
-      const res = await fetch(`/api/case/${caseId}`);
-      const data = await res.json();
-      console.log('Chat admin - datos:', data); // DEBUG
-      const container = document.getElementById('chat-messages');
-      container.innerHTML = "";
-      if(data.messages && data.messages.length > 0) {
-        data.messages.forEach(m => {
-          const type = m.sender === 'admin' ? 'me' : (m.sender === 'whistleblower' ? 'other' : 'system');
-          appendMsg(m.text, type, m.timestamp, m.file);
-        });
-      }
-      socket.emit('join_case', caseId);
-    } catch(err) { console.error(err); }
-  }
-
-  function renderAdminActions() {
-    const container = document.getElementById('admin-actions-container');
-    container.style.display = 'flex';
-    container.innerHTML = `
-      <button class="btn-action btn-act-pending" onclick="updateCaseStatus('pending')">🟡 Pendiente</button>
-      <button class="btn-action btn-act-review" onclick="updateCaseStatus('in_review')">🔵 En Revisión</button>
-      <button class="btn-action btn-act-resolved" onclick="updateCaseStatus('resolved')">✅ Resuelto</button>
-    `;
-  }
-
-  async function updateCaseStatus(newStatus) {
-    if(!currentCaseId) return;
-    if(!confirm(`¿Marcar como ${newStatus}?`)) return;
-    try {
-      const res = await fetch(`/api/case/${currentCaseId}/status`, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: newStatus })
-      });
-      const data = await res.json();
-      if(data.success) {
-        alert('Estado actualizado');
-        if(document.getElementById('screen-admin').classList.contains('active')) {
-          loadAdminDashboard();
-        }
-      }
-    } catch(err) { alert('Error'); }
-  }
-
-  function appendMsg(text, type, timestamp, file) {
-    const container = document.getElementById('chat-messages');
-    const div = document.createElement('div');
-    div.className = `msg msg-${type}`;
-    let timeStr = "";
-    if(timestamp) {
-      const time = new Date(timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-      timeStr = `<div class="msg-time">${time}</div>`;
-    }
-    
-    let fileHtml = "";
-    if(file) {
-      console.log('Archivo en mensaje:', file); // DEBUG
-      if(file.mimetype && file.mimetype.startsWith('image/')) {
-        fileHtml = `<div class="msg-file"><img src="/uploads/${file.filename}" alt="${file.originalname}"><div><a href="/uploads/${file.filename}" target="_blank"><i class="fas fa-download"></i> ${file.originalname}</a></div></div>`;
-      } else if(file.mimetype && file.mimetype.startsWith('video/')) {
-        fileHtml = `<div class="msg-file"><video controls src="/uploads/${file.filename}"></video><div><a href="/uploads/${file.filename}" target="_blank"><i class="fas fa-download"></i> ${file.originalname}</a></div></div>`;
-      } else {
-        fileHtml = `<div class="msg-file"><a href="/uploads/${file.filename}" target="_blank"><i class="fas fa-file"></i> ${file.originalname}</a></div>`;
-      }
-    }
-    
-    div.innerHTML = `${text}${fileHtml}${timeStr}`;
-    container.appendChild(div);
-    container.scrollTop = 99999;
-  }
-
-  function sendMsg() {
-    const input = document.getElementById('chat-input');
-    const text = input.value.trim();
-    if(!text || !currentCaseId) return;
-    const sender = isAdmin ? 'admin' : 'whistleblower';
-    const type = isAdmin ? 'other' : 'me'; 
-    appendMsg(text, type);
-    socket.emit('send_message', { caseId: currentCaseId, text: text, sender: sender });
-    input.value = "";
-  }
-  
-  function handleEnter(e) { if(e.key === 'Enter') sendMsg(); }
-
-  async function handleFileAttach(event) {
-    const files = event.target.files;
-    if(files.length === 0 || !currentCaseId) return;
-    
-    const formData = new FormData();
-    for(let file of files) {
-      formData.append('files', file);
-    }
-    
-    try {
-      const res = await fetch(`/api/upload/${currentCaseId}`, {
-        method: 'POST',
-        body: formData
-      });
-      const data = await res.json();
-      console.log('Archivos subidos:', data); // DEBUG
-      if(data.success) {
-        const sender = isAdmin ? 'admin' : 'whistleblower';
-        data.files.forEach(file => {
-          socket.emit('send_message', { 
-            caseId: currentCaseId, 
-            text: `📎 Archivo adjunto: ${file.originalname}`, 
-            sender: sender,
-            file: file
-          });
-        });
-        alert(`${data.files.length} archivo(s) adjuntado(s) correctamente`);
-      }
-    } catch(err) {
-      console.error('Error adjuntando:', err);
-      alert('Error al adjuntar archivos');
-    }
-    
-    document.getElementById('fileAttachment').value = '';
-  }
-
-  // --- ADMIN DASHBOARD ---
-  async function loginAdmin() {
-    if(document.getElementById('admin-pass').value === 'adminjanozt123') { 
-      isAdmin = true
+const PORT = process.env.PORT || 4000;
+server.listen(PORT, () => console.log(`✅ Servidor activo en puerto ${PORT}`));
