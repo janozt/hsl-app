@@ -3,73 +3,117 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Canal de Denuncias HSL - JANOZ</title>
+  <title>Canal de Denuncias HSL - JANOZT</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <style>
-    :root { --primary: #075E54; --secondary: #25D366; --bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    :root {
+      /* COLORES DEL LOGO JANOZT */
+      --verde: #00A651;
+      --amarillo: #FDB913;
+      --naranja: #F15A22;
+      --negro: #1A1A1A;
+      --blanco: #FFFFFF;
+      --primary: var(--verde);
+      --secondary: var(--naranja);
+      --accent: var(--amarillo);
+      --bg: linear-gradient(135deg, #00A651 0%, #FDB913 50%, #F15A22 100%);
+    }
+
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
     body { background: var(--bg); min-height: 100vh; display: flex; justify-content: center; align-items: center; padding: 20px; color: #333; }
-    .app { background: white; width: 100%; max-width: 850px; border-radius: 20px; box-shadow: 0 15px 40px rgba(0,0,0,0.3); overflow: hidden; display: flex; flex-direction: column; height: 90vh; max-height: 750px; }
+    
+    .app { background: white; width: 100%; max-width: 850px; border-radius: 20px; box-shadow: 0 15px 40px rgba(0,0,0,0.3); overflow: hidden; display: flex; flex-direction: column; height: 90vh; max-height: 750px; border: 3px solid var(--verde); }
     .screen { display: none; flex: 1; flex-direction: column; overflow: hidden; }
     .screen.active { display: flex; }
     
-    .header { background: var(--primary); color: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; }
+    .header { background: linear-gradient(90deg, var(--verde) 0%, var(--naranja) 100%); color: white; padding: 15px 20px; display: flex; align-items: center; justify-content: space-between; }
     .header h2 { font-size: 18px; }
     .btn-back { background: none; border: none; color: white; font-size: 20px; cursor: pointer; }
     
     .home { padding: 40px 20px; text-align: center; flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-    .logo { max-height: 100px; margin-bottom: 20px; }
-    .title { color: var(--primary); margin-bottom: 10px; }
+    .logo { max-height: 120px; margin-bottom: 20px; }
+    .title { color: var(--verde); margin-bottom: 10px; font-size: 26px; }
+    .company-name { color: var(--naranja); font-weight: 800; font-size: 16px; letter-spacing: 2px; margin-bottom: 25px; }
+    
     .btn { padding: 14px 28px; border: none; border-radius: 50px; font-size: 16px; font-weight: bold; cursor: pointer; margin: 10px; color: white; transition: 0.3s; display: inline-flex; align-items: center; gap: 8px; }
     .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
-    .btn-green { background: var(--secondary); }
-    .btn-blue { background: #34b7f1; }
+    .btn-green { background: linear-gradient(90deg, var(--verde), #00C853); }
+    .btn-orange { background: linear-gradient(90deg, var(--naranja), #FF7043); }
+    .btn-yellow { background: linear-gradient(90deg, var(--amarillo), #FFCA28); color: var(--negro); }
     .btn-grey { background: #ccc; color: #333; }
     .admin-link { margin-top: 30px; font-size: 12px; color: #999; text-decoration: none; }
     
     .form-content { padding: 20px; overflow-y: auto; }
     .form-group { margin-bottom: 20px; }
-    .form-group label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 14px; }
-    .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 10px; font-size: 15px; }
-    .btn-submit { width: 100%; padding: 14px; background: var(--secondary); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; }
+    .form-group label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 14px; color: var(--negro); }
+    .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 10px; font-size: 15px; transition: border 0.3s; }
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: var(--verde); outline: none; }
+    .btn-submit { width: 100%; padding: 14px; background: linear-gradient(90deg, var(--verde), var(--naranja)); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; }
+    .btn-submit:hover { opacity: 0.9; }
     
     .admin-content { padding: 20px; overflow-y: auto; background: #f8f9fa; height: 100%; }
     .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }
-    .stat-card { background: white; padding: 15px; border-radius: 12px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-    .stat-val { font-size: 24px; font-weight: bold; color: var(--primary); }
+    .stat-card { background: white; padding: 15px; border-radius: 12px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-top: 4px solid var(--verde); }
+    .stat-val { font-size: 24px; font-weight: bold; color: var(--verde); }
     .stat-lab { font-size: 11px; color: #888; text-transform: uppercase; }
     
-    .controls { background: white; padding: 15px; border-radius: 12px; margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .controls { background: white; padding: 15px; border-radius: 12px; margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; border-left: 4px solid var(--naranja); }
     .search { flex: 1; padding: 10px; border: 2px solid #eee; border-radius: 8px; }
-    .filter-btn { padding: 6px 12px; border: 1px solid #ddd; background: white; border-radius: 15px; cursor: pointer; font-size: 12px; }
-    .filter-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+    .search:focus { border-color: var(--verde); outline: none; }
+    .filter-btn { padding: 6px 12px; border: 2px solid #ddd; background: white; border-radius: 15px; cursor: pointer; font-size: 12px; transition: 0.2s; }
+    .filter-btn.active { background: var(--verde); color: white; border-color: var(--verde); }
+    .filter-btn:hover:not(.active) { border-color: var(--naranja); }
     
-    .case-card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 12px; cursor: pointer; border-left: 4px solid var(--secondary); transition: 0.2s; }
-    .case-card:hover { transform: translateX(5px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+    .case-card { background: white; padding: 15px; border-radius: 12px; margin-bottom: 12px; cursor: pointer; border-left: 4px solid var(--verde); transition: 0.2s; }
+    .case-card:hover { transform: translateX(5px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); border-left-color: var(--naranja); }
     .case-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-    .case-id { font-weight: bold; color: var(--primary); font-family: monospace; }
+    .case-id { font-weight: bold; color: var(--verde); font-family: monospace; }
     .badge { padding: 3px 8px; border-radius: 10px; font-size: 10px; font-weight: bold; color: white; }
-    .badge.pending { background: orange; } .badge.in_review { background: #34b7f1; } .badge.resolved { background: green; }
+    .badge.pending { background: var(--amarillo); color: var(--negro); } 
+    .badge.in_review { background: var(--naranja); } 
+    .badge.resolved { background: var(--verde); }
     .case-meta { font-size: 12px; color: #888; margin-top: 5px; display: flex; gap: 12px; }
     
     .details { padding: 20px; overflow-y: auto; background: white; }
-    .detail-box { background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px; }
-    .detail-title { font-weight: bold; color: var(--primary); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+    .detail-box { background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 15px; border-left: 4px solid var(--amarillo); }
+    .detail-title { font-weight: bold; color: var(--naranja); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
     
-    .actions { padding: 15px; background: #e9ecef; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
-    .btn-act { padding: 8px 15px; border: none; border-radius: 20px; font-size: 12px; font-weight: bold; cursor: pointer; color: white; }
+    .actions { padding: 15px; background: linear-gradient(90deg, #f0f0f0, #e8e8e8); display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; border-top: 3px solid var(--verde); }
+    .btn-act { padding: 8px 15px; border: none; border-radius: 20px; font-size: 12px; font-weight: bold; cursor: pointer; color: white; transition: 0.2s; }
+    .btn-act:hover { transform: scale(1.05); }
+    .btn-act-pending { background: var(--amarillo); color: var(--negro); }
+    .btn-act-review { background: var(--naranja); }
+    .btn-act-resolved { background: var(--verde); }
+    
     .login-box { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; padding: 30px; }
+    
+    /* Decoración de diamantes del logo */
+    .diamond-deco {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      opacity: 0.1;
+      transform: rotate(45deg);
+    }
+    .diamond-green { background: var(--verde); top: 20px; left: 20px; }
+    .diamond-yellow { background: var(--amarillo); top: 20px; right: 20px; }
+    .diamond-orange { background: var(--naranja); bottom: 20px; left: 20px; }
   </style>
 </head>
 <body>
 
 <div class="app">
+  <!-- Decoraciones de diamantes -->
+  <div class="diamond-deco diamond-green"></div>
+  <div class="diamond-deco diamond-yellow"></div>
+  <div class="diamond-deco diamond-orange"></div>
+
   <!-- INICIO -->
   <div id="screen-home" class="screen active">
     <div class="home">
-      <img src="img/logo.png" alt="JANOZ" class="logo">
+      <img src="img/logo.png" alt="JANOZT CONTRATISTAS" class="logo">
       <h1 class="title">Canal de Denuncias HSL</h1>
-      <p style="color:#666; margin-bottom:25px;">JANOZ CONTRATISTAS GENERALES S.A.C</p>
+      <p class="company-name">JANOZT CONTRATISTAS GENERALES S.A.C</p>
       <button class="btn btn-green" onclick="showScreen('screen-form')"><i class="fas fa-file-alt"></i> Presentar Denuncia</button>
       <a href="#" onclick="showScreen('screen-login')" class="admin-link">Acceso RR.HH.</a>
     </div>
@@ -97,9 +141,9 @@
   <!-- LOGIN ADMIN -->
   <div id="screen-login" class="screen">
     <div class="login-box">
-      <h2 style="margin-bottom:20px; color:var(--primary);">Acceso RR.HH.</h2>
+      <h2 style="margin-bottom:20px; color:var(--naranja);">Acceso RR.HH.</h2>
       <div class="form-group" style="width:100%"><input type="password" id="adminPass" placeholder="Contraseña" style="text-align:center"></div>
-      <button class="btn btn-blue" style="width:100%" onclick="loginAdmin()">Ingresar</button>
+      <button class="btn btn-orange" style="width:100%" onclick="loginAdmin()">Ingresar</button>
       <button class="btn btn-grey" style="width:100%; margin-top:10px" onclick="showScreen('screen-home')">Cancelar</button>
     </div>
   </div>
@@ -141,8 +185,8 @@
       const data = await res.json();
       if(data.success) {
         // ⚠️ CAMBIA ESTE NÚMERO POR EL WHATSAPP REAL DE LA EMPRESA
-        const PHONE = '51951722365'; 
-        const msg = `Hola, he presentado una denuncia a través del Canal HSL. Mi código de seguimiento es: ${data.caseId}. Quedo atento a su respuesta.`;
+        const PHONE = '51999999999'; 
+        const msg = `Hola, he presentado una denuncia a través del Canal HSL de JANOZT. Mi código de seguimiento es: ${data.caseId}. Quedo atento a su respuesta.`;
         window.location.href = `https://wa.me/${PHONE}?text=${encodeURIComponent(msg)}`;
       }
     } catch(e) { alert('Error al enviar'); }
@@ -168,8 +212,8 @@
       panel.innerHTML = `
         <div class="stats">
           <div class="stat-card"><div class="stat-val">${stats.total}</div><div class="stat-lab">Total Casos</div></div>
-          <div class="stat-card"><div class="stat-val" style="color:orange">${stats.pending}</div><div class="stat-lab">Pendientes</div></div>
-          <div class="stat-card"><div class="stat-val" style="color:#34b7f1">${stats.inReview}</div><div class="stat-lab">En Revisión</div></div>
+          <div class="stat-card"><div class="stat-val" style="color:var(--amarillo)">${stats.pending}</div><div class="stat-lab">Pendientes</div></div>
+          <div class="stat-card"><div class="stat-val" style="color:var(--naranja)">${stats.inReview}</div><div class="stat-lab">En Revisión</div></div>
         </div>
         <div class="controls">
           <input type="text" class="search" placeholder="🔍 Buscar por ID..." oninput="renderList()">
@@ -239,9 +283,9 @@
       `;
       
       document.getElementById('det-actions').innerHTML = `
-        <button class="btn-act" style="background:orange" onclick="updateStatus('pending')">🟡 Pendiente</button>
-        <button class="btn-act" style="background:#34b7f1" onclick="updateStatus('in_review')">🔵 En Revisión</button>
-        <button class="btn-act" style="background:green" onclick="updateStatus('resolved')">✅ Resuelto</button>
+        <button class="btn-act btn-act-pending" onclick="updateStatus('pending')">🟡 Pendiente</button>
+        <button class="btn-act btn-act-review" onclick="updateStatus('in_review')">🔵 En Revisión</button>
+        <button class="btn-act btn-act-resolved" onclick="updateStatus('resolved')">✅ Resuelto</button>
       `;
     } catch(e) { cont.innerHTML = '<p style="color:red;text-align:center">Error</p>'; }
   }
